@@ -166,7 +166,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
   <section class="view" id="vEsc">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px 6px"><div id="escRec" style="font-size:15px"></div><button id="escEnd" style="color:#9C95A3;font-size:13px;padding:6px 10px;border:1px solid #2E2A33;border-radius:8px">Terminar</button></div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0 18px;gap:8px"><div class="s" id="escChiste" style="color:#7d7684"></div>
-      <div style="display:flex;gap:6px;align-items:center"><button id="escModo" style="color:#F5F2F6;font-size:12px;padding:6px 10px;border:1px solid #2E2A33;border-radius:8px"></button><button id="escMenos" style="color:#F5F2F6;font-size:13px;width:34px;height:30px;border:1px solid #2E2A33;border-radius:8px">A−</button><button id="escMas" style="color:#F5F2F6;font-size:15px;width:34px;height:30px;border:1px solid #2E2A33;border-radius:8px">A+</button></div></div>
+      <div style="display:flex;gap:6px;align-items:center"><button id="escRot" style="color:#F5F2F6;font-size:12px;height:30px;padding:0 8px;border:1px solid #2E2A33;border-radius:8px;display:flex;align-items:center;gap:4px"></button><button id="escModo" style="color:#F5F2F6;font-size:12px;padding:6px 10px;border:1px solid #2E2A33;border-radius:8px"></button><button id="escMenos" style="color:#F5F2F6;font-size:13px;width:34px;height:30px;border:1px solid #2E2A33;border-radius:8px">A−</button><button id="escMas" style="color:#F5F2F6;font-size:15px;width:34px;height:30px;border:1px solid #2E2A33;border-radius:8px">A+</button></div></div>
     <video id="escCam" muted playsinline autoplay style="display:none;position:absolute;right:16px;bottom:118px;width:72px;height:96px;object-fit:cover;border-radius:10px;border:2px solid #FF4D4D;z-index:2;transform:scaleX(-1);background:#111"></video>
     <div id="escBody" style="flex:1;overflow-y:auto;padding:16px 22px 10px;color:#F5F2F6;-webkit-overflow-scrolling:touch"></div>
     <div style="padding:0 18px 8px"><div style="height:8px;border-radius:5px;background:#221F26;overflow:hidden"><div id="escMeter" style="height:100%;width:0;transition:width .15s"></div></div></div>
@@ -209,7 +209,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 5.1</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 5.2</div>
   </section>
 
   <!-- EDITOR -->
@@ -877,6 +877,7 @@ async function startEscenario(s,tipo){
   Object.assign(ESC,{s,i:0,marks:[],chunks:[],L:[],F:[],tipo,stream:null,rec:null,mime:'',live:0});
   try{await document.documentElement.requestFullscreen?.()}catch(e){}
   try{ESC.wake=await navigator.wakeLock?.request('screen')}catch(e){}
+  if(S.cfg.escLock!==false)await lockRot(true,true);
   if(tipo!=='nada'){
     try{
       ESC.stream=await navigator.mediaDevices.getUserMedia(tipo==='video'?{audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:{facingMode:'user',width:{ideal:640},height:{ideal:360}}}:{audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
@@ -921,11 +922,22 @@ function renderEsc(){
    <div style="margin-top:30px;padding-top:14px;border-top:1px solid #221F26;color:#5d5763;font-size:13px">${nx?'Siguiente':'Es el último'}</div>
    ${nx?`<div style="font-size:clamp(18px,5vw,26px);font-weight:700;color:#7d7684;margin:4px 0 20px">${esc(nx.titulo||'Sin título')}</div>`:''}`;
   $('#escBody').scrollTop=0;
-  $('#escModo').textContent=modo==='guion'?'Ver solo remates':'Ver guion completo';
+  $('#escModo').textContent=modo==='guion'?'Remates':'Guion';
+  drawRot();
   $('#escNext').textContent=nx?'Siguiente chiste':'Terminar el pase';
   $('#escPrev').style.visibility=ESC.i>0?'visible':'hidden';
   tickEsc();
 }
+async function lockRot(on,silencioso){
+  try{if(on){if(!document.fullscreenElement)await document.documentElement.requestFullscreen?.();
+      const tipo=(screen.orientation&&screen.orientation.type||'portrait-primary');await screen.orientation.lock(tipo.startsWith('landscape')?'landscape':'portrait');ESC.rotLock=true}
+    else{screen.orientation.unlock();ESC.rotLock=false}}
+  catch(e){ESC.rotLock=false;if(!silencioso)toast('Este móvil o navegador no deja bloquear el giro desde la app. Usa el bloqueo de rotación del móvil (en los ajustes rápidos).')}
+  drawRot();
+}
+function drawRot(){const b=$('#escRot');if(!b)return;b.innerHTML=(ESC.rotLock?'<svg width="14" height="14" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2"/></svg>Giro':'<svg width="14" height="14" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Giro');
+  b.style.borderColor=ESC.rotLock?'#FF3E8E':'#2E2A33';b.title=ESC.rotLock?'Giro bloqueado: toca para liberar':'Giro libre: toca para bloquear'}
+$('#escRot').onclick=async()=>{const on=!ESC.rotLock;S.cfg.escLock=on;Store.cfg();await lockRot(on);toast(ESC.rotLock?'Giro de pantalla bloqueado':'Giro de pantalla libre')};
 $('#escModo').onclick=()=>{S.cfg.escModo=(S.cfg.escModo||'guion')==='guion'?'remates':'guion';Store.cfg();renderEsc()};
 $('#escMas').onclick=()=>{S.cfg.escTam=Math.min(44,(S.cfg.escTam||22)+3);Store.cfg();renderEsc()};
 $('#escMenos').onclick=()=>{S.cfg.escTam=Math.max(14,(S.cfg.escTam||22)-3);Store.cfg();renderEsc()};
@@ -942,7 +954,7 @@ $('#escEnd').onclick=()=>confirmBox('¿Terminar el pase?','Terminar',endEscenari
 async function endEscenario(){
   clearInterval(ESC.timer);document.removeEventListener('visibilitychange',escVis);
   const total=elapsed();
-  try{ESC.wake&&ESC.wake.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}
+  try{ESC.wake&&ESC.wake.release()}catch(e){}try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}ESC.rotLock=false;try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}
   let blob=null;
   if(ESC.rec&&ESC.rec.state!=='inactive'){await new Promise(r=>{ESC.rec.onstop=r;ESC.rec.stop()});blob=new Blob(ESC.chunks,{type:ESC.mime||ESC.chunks[0]?.type||'audio/webm'})}
   $('#escCam').srcObject=null;$('#escCam').style.display='none';
@@ -997,9 +1009,11 @@ async function verAnalisis(pid,nuevo){
      <div class="row" style="margin-top:10px"><span class="s">Sensibilidad</span><input id="vaS" type="range" min="1.5" max="9" step=".5" value="${sens}" style="flex:1;padding:0;margin-left:10px;accent-color:var(--pink)"></div>
      <div class="s" style="margin-top:4px">Si marca risas donde no las hubo, baja la sensibilidad; si se le escapan, súbela.</div></div>`:'<div class="s">Este pase no se grabó: no hay curva de risas.</div>'}
    <div id="vaL"></div>
-   ${p.grab?`<button class="btn ghost sm" id="vaDel" style="width:100%;margin-top:8px">Borrar la grabación${p.grab.driveId?' (también de Drive)':''}</button><div class="s" style="margin-top:4px;text-align:center">Las notas y la curva de risas se conservan.</div>`:''}
+   ${p.curva?`<button class="btn ghost sm" id="vaDelR" style="width:100%;margin-top:8px">Borrar las risas de este pase</button>`:''}
+   ${p.grab?`<button class="btn ghost sm" id="vaDel" style="width:100%;margin-top:8px">Borrar la grabación${p.grab.driveId?' (también de Drive)':''}</button><div class="s" style="margin-top:4px;text-align:center">Las notas se conservan.</div>`:''}
    <button class="btn" id="vaP" style="width:100%;margin-top:8px">${nuevo?'Puntuar con estas sugerencias':'Ver / cambiar notas'}</button>`);
   $('#vaC').onclick=closeSheet;
+  if($('#vaDelR'))$('#vaDelR').onclick=()=>confirmBox('¿Borrar la curva de risas y las sugerencias de este pase? Las notas que pusiste se conservan.','Borrar risas',()=>{delete p.curva;p.editado=now();Store.put('pases',p);renderSetD();toast('Risas borradas')});
   if($('#vaDel'))$('#vaDel').onclick=()=>confirmBox('¿Borrar la grabación de este pase? Las notas se conservan.','Borrar grabación',async()=>{
     await IDB.del('grab:'+p.id);if(p.grab.driveId){Store.tomb['drv:'+p.grab.driveId]=now()}delete p.grab;p.editado=now();Store.put('pases',p);renderSetD();toast('Grabación borrada')});
   // grabación
