@@ -244,7 +244,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 8</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 8.1</div>
   </section>
 
   <!-- EDITOR -->
@@ -1311,7 +1311,9 @@ async function renderIni(){
      ${[['idea','+ Idea','Apunta algo rápido'],['texto','Nuevo texto','Escribe en la Mesa'],['ensayo','Ensayar','Modo escenario'],['sets','Setlists','Prepara un show']].map(([k,t,d])=>`<button class="card" data-q="${k}" style="text-align:left;margin:0;${k==='idea'?'border-color:var(--pink)':''}"><div class="t" style="${k==='idea'?'color:var(--pink)':''}">${t}</div><div class="s" style="margin-top:3px">${d}</div></button>`).join('')}
    </div>
    ${prox?`<div class="lbl">Próximo show</div><div class="card" data-set="${prox.id}" style="cursor:pointer;border-color:rgba(255,62,142,.45)"><div class="row"><div class="t">${esc(prox.nombre||'Setlist')}</div><span class="st-chip e-cerrado">${prox.fecha===hoy?'Hoy':fechaCorta(prox.fecha)}</span></div><div class="s" style="margin-top:4px">${esc(prox.local||'Sin local')} · ${(prox.items||[]).length} textos · ${durTxt(setDur(prox))} de ${prox.maxMin}:00</div></div>`:''}
+   ${objsActivos().length?`<div class="row" style="margin-top:6px"><div class="lbl">Tus objetivos</div><button class="s" data-nobj="1" style="color:var(--pink);font-weight:700">+ Nuevo</button></div>${objsActivos().map(tarjetaObj).join('')}`:''}
    ${bloqueMotivacion()}
+   ${!objsActivos().length?'<button class="btn ghost sm" data-nobj="1" style="width:100%;margin-bottom:6px;border-style:dashed">+ Crear un objetivo (p. ej. para un show)</button>':''}
    <div class="lbl">Tu material</div>
    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px">
      ${[[Object.keys(S.ideas).length,'ideas'],[T.length,'textos'],[durTxt(rep),'min cerrados'],[pend,'pendientes']].map(([n,l])=>`<div class="stat" style="padding:10px 8px;text-align:center"><b style="font-size:19px">${n}</b><span class="s" style="font-size:11px">${l}</span></div>`).join('')}
@@ -1321,6 +1323,7 @@ async function renderIni(){
    ${!T.length&&!Object.keys(S.ideas).length?'<div class="empty" style="padding:24px 10px">Empieza apuntando una idea o escribiendo tu primer texto.</div>':''}`;
   $$('#iniBody [data-q]').forEach(b=>b.onclick=()=>{const k=b.dataset.q;if(k==='idea'){go('vLib');setTimeout(()=>$('#qText').focus(),60)}else if(k==='texto'){go('vMesa');$('#newText').click()}else if(k==='ensayo'){S.cfg.escModoUso='ensayo';go('vSes');$('#newSes').click()}else go('vSet')});
   $$('#iniBody [data-set]').forEach(b=>b.onclick=()=>openSet(b.dataset.set));
+  $$('#iniBody [data-obj]').forEach(b=>b.onclick=()=>verObj(b.dataset.obj));$$('#iniBody [data-nobj]').forEach(b=>b.onclick=()=>editObj(null));
   $$('#iniBody [data-t]').forEach(b=>b.onclick=()=>openEditor(b.dataset.t));
   $$('#iniBody [data-p]').forEach(b=>b.onclick=()=>{go('vSes');abrirSesion(b.dataset.p)});
 }
@@ -1369,6 +1372,70 @@ function bloqueMotivacion(){const o=obj();if(!o.activo)return '';const t=diaTot(
      <div class="split"><div style="width:${Math.min(100,rep/o.repertorio*100)}%;background:var(--pink)"></div></div>
      <div class="row s" style="margin-top:10px"><span>Esta semana: ${sem.av}/${o.avancesSem} textos avanzan</span><span>${sem.ses}/${o.sesionesSem} sesiones</span></div></div>`}
 
+/* --- objetivos personalizados (p. ej. «Show Navidad») --- */
+const METAS={
+ diasSem:{txt:'Días escribiendo por semana',uni:'días',per:'semana',def:5,ayuda:'Cuenta un día si escribes al menos 5 minutos.'},
+ minDia:{txt:'Minutos escribiendo al día',uni:'min',per:'día',def:30},
+ palDia:{txt:'Palabras nuevas al día',uni:'palabras',per:'día',def:200},
+ ensayoH:{txt:'Horas de ensayo en total',uni:'h',per:'total',def:5,dec:1},
+ ensayos:{txt:'Ensayos en total',uni:'ensayos',per:'total',def:10},
+ opens:{txt:'Actuaciones (opens) en total',uni:'actuaciones',per:'total',def:4},
+ avances:{txt:'Textos que avanzan de estado',uni:'textos',per:'total',def:5},
+ cerrados:{txt:'Minutos de repertorio cerrado',uni:'min',per:'total',def:15}
+};
+function diasEntre(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5)}
+function rangoDias(a,b){const out=[],x=new Date(a+'T12:00:00'),f=new Date(b+'T12:00:00');while(x<=f){out.push(dKey(x));x.setDate(x.getDate()+1)}return out}
+function progMeta(o,m){
+  const hoy=dKey(),fin=o.hasta<hoy?o.hasta:hoy,dias=o.desde<=fin?rangoDias(o.desde,fin):[];
+  const total=Math.max(1,diasEntre(o.desde,o.hasta)+1),trans=Math.min(total,dias.length),frac=trans/total;
+  const P=Object.values(S.pases).filter(p=>p.fecha&&p.fecha>=o.desde&&p.fecha<=o.hasta);
+  let r={actual:0,meta:m.n,txt:'',ok:false,ritmo:null};
+  if(m.tipo==='minDia'||m.tipo==='palDia'){const val=k=>m.tipo==='minDia'?diaTot(k).seg/60:diaTot(k).pal;const hoyV=o.desde<=hoy&&hoy<=o.hasta?val(hoy):0;
+    const cumplidos=dias.filter(k=>val(k)>=m.n).length;r.actual=hoyV;r.ok=hoyV>=m.n;r.txt=`Hoy ${Math.floor(hoyV)} de ${m.n} ${METAS[m.tipo].uni} · cumplido ${cumplidos} de ${trans} día${trans===1?'':'s'}`;r.ritmo=trans?cumplidos/trans:null}
+  else if(m.tipo==='diasSem'){const lunes=semanaKey(new Date());const sem=rangoDias(lunes>o.desde?lunes:o.desde,fin<lunes?lunes:fin).filter(k=>k>=o.desde&&k<=fin);
+    const n=sem.filter(k=>diaTot(k).seg>=300).length;r.actual=n;r.ok=n>=m.n;
+    const semanas={};dias.forEach(k=>{const w=semanaKey(new Date(k+'T12:00:00'));semanas[w]=(semanas[w]||0)+(diaTot(k).seg>=300?1:0)});
+    const ws=Object.keys(semanas),okW=ws.filter(w=>semanas[w]>=m.n).length;r.txt=`Esta semana ${n} de ${m.n} días · semanas cumplidas ${okW} de ${ws.length}`;r.ritmo=ws.length?okW/ws.length:null}
+  else{let v=0;
+    if(m.tipo==='ensayoH')v=P.filter(p=>paseTipo(p)==='ensayo').reduce((a,p)=>a+(p.duracion||0),0)/3600;
+    if(m.tipo==='ensayos')v=P.filter(p=>paseTipo(p)==='ensayo').length;
+    if(m.tipo==='opens')v=P.filter(p=>paseTipo(p)==='actuacion').length;
+    if(m.tipo==='avances')v=dias.reduce((a,k)=>a+diaTot(k).av,0);
+    if(m.tipo==='cerrados')v=repertorioMin();
+    r.actual=v;r.ok=v>=m.n;const esperado=m.n*frac;
+    r.txt=`${m.tipo==='ensayoH'?v.toFixed(1).replace('.',','):Math.floor(v)} de ${m.n} ${METAS[m.tipo].uni}${!r.ok&&trans<total?(v>=esperado?' · vas a buen ritmo':' · vas por detrás del ritmo'):''}`;r.ritmo=Math.min(1,v/m.n)}
+  return r}
+function objsActivos(){const hoy=dKey();return Object.values(S.cfg.objetivos||{}).filter(o=>o.hasta>=hoy).sort((a,b)=>a.hasta.localeCompare(b.hasta))}
+function tarjetaObj(o){const hoy=dKey(),falta=diasEntre(hoy,o.hasta),ps=(o.metas||[]).map(m=>progMeta(o,m));
+  const glob=ps.length?ps.reduce((a,p)=>a+(p.ritmo??0),0)/ps.length:0;
+  return `<div class="card" data-obj="${o.id}" style="cursor:pointer;border-color:rgba(255,62,142,.4)"><div class="row"><div class="t">${esc(o.nombre)}</div><span class="st-chip e-cerrado">${falta===0?'¡Hoy!':falta===1?'Mañana':'Faltan '+falta+' días'}</span></div>
+   <div class="s" style="margin:4px 0 8px">${fechaCorta(o.hasta)} · ${(o.metas||[]).length} meta${(o.metas||[]).length===1?'':'s'}</div>
+   ${ps.map((p,i)=>`<div class="row s" style="margin-top:6px;gap:10px"><span style="flex:1;min-width:0">${esc(METAS[o.metas[i].tipo].txt)}</span><span style="white-space:nowrap;color:${p.ok?'var(--green)':'var(--ink)'};font-weight:700">${p.ok?'✓ ':''}${o.metas[i].tipo==='ensayoH'?p.actual.toFixed(1).replace('.',','):Math.floor(p.actual)}/${o.metas[i].n}</span></div>`).join('')}
+   <div class="split" style="margin-top:10px"><div style="width:${Math.round(glob*100)}%;background:var(--pink)"></div></div></div>`}
+function verObj(id){const o=(S.cfg.objetivos||{})[id];if(!o)return;const hoy=dKey(),falta=diasEntre(hoy,o.hasta);
+  openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:4px"><button class="s" id="voC">Cerrar</button><div class="t">${esc(o.nombre)}</div><button class="s" style="color:var(--pink);font-weight:800" id="voE">Editar</button></div>
+   <div class="s" style="text-align:center;margin-bottom:14px">${fechaCorta(o.desde)} → ${fechaCorta(o.hasta)} · ${falta>0?'faltan '+falta+' días':falta===0?'es hoy':'terminado'}</div>
+   ${(o.metas||[]).map(m=>{const p=progMeta(o,m);return `<div class="card"><div class="row"><div class="t" style="font-size:14px">${esc(METAS[m.tipo].txt)}</div>${p.ok?'<span class="st-chip e-funciona">Cumplido</span>':''}</div>
+     <div class="s" style="margin:6px 0 8px">${p.txt}</div><div class="split"><div style="width:${Math.round(Math.min(1,p.ritmo??(p.actual/m.n))*100)}%;background:${p.ok?'var(--green)':'var(--pink)'}"></div></div>${METAS[m.tipo].ayuda?`<div class="s" style="margin-top:6px;font-size:11px">${METAS[m.tipo].ayuda}</div>`:''}</div>`}).join('')||'<div class="s">Sin metas todavía.</div>'}`);
+  $('#voC').onclick=closeSheet;$('#voE').onclick=()=>editObj(id)}
+function editObj(id){const ex=id?(S.cfg.objetivos||{})[id]:null;const o=ex?JSON.parse(JSON.stringify(ex)):{id:'o'+uid(),nombre:'',desde:dKey(),hasta:'',metas:[]};
+  const draw=()=>{$('#eoM').innerHTML=o.metas.map((m,i)=>`<div class="card" style="padding:10px 12px"><div class="row"><span style="font-size:13.5px;flex:1">${esc(METAS[m.tipo].txt)}</span><button class="mv" data-del="${i}">✕</button></div>
+      <div class="row" style="margin-top:8px;justify-content:flex-start;gap:8px"><input type="number" inputmode="decimal" min="0" step="${METAS[m.tipo].dec?'0.5':'1'}" value="${m.n}" data-n="${i}" style="width:110px"><span class="s">${METAS[m.tipo].uni} ${METAS[m.tipo].per==='total'?'en total':'por '+METAS[m.tipo].per}</span></div></div>`).join('')||'<div class="s" style="margin-bottom:8px">Añade al menos una meta.</div>';
+    $('#eoA').innerHTML=Object.entries(METAS).filter(([k])=>!o.metas.some(m=>m.tipo===k)).map(([k,v])=>`<button class="chip" data-add="${k}">+ ${v.txt}</button>`).join('');
+    $$('#eoM [data-del]').forEach(b=>b.onclick=()=>{o.metas.splice(+b.dataset.del,1);draw()});
+    $$('#eoM [data-n]').forEach(inp=>inp.oninput=()=>{o.metas[+inp.dataset.n].n=Math.max(0,+inp.value||0)});
+    $$('#eoA [data-add]').forEach(b=>b.onclick=()=>{o.metas.push({tipo:b.dataset.add,n:METAS[b.dataset.add].def});draw()})};
+  openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:12px"><button class="s" id="eoC">Cancelar</button><div class="t">${ex?'Editar objetivo':'Nuevo objetivo'}</div><button class="s" style="color:var(--pink);font-weight:800" id="eoS">Guardar</button></div>
+   <div class="lbl">Nombre</div><input id="eoN" value="${esc(o.nombre)}" placeholder="Ej.: Show Navidad">
+   <div class="row" style="gap:10px"><div style="flex:1"><div class="lbl">Desde</div><input id="eoD" type="date" value="${o.desde}"></div><div style="flex:1"><div class="lbl">Hasta (el show)</div><input id="eoH" type="date" value="${o.hasta}"></div></div>
+   <div class="lbl">Metas</div><div id="eoM"></div><div id="eoA" style="margin-top:4px"></div>
+   ${ex?'<button class="btn ghost sm" id="eoX" style="width:100%;margin-top:14px">Borrar objetivo</button>':''}`);
+  draw();$('#eoC').onclick=closeSheet;
+  $('#eoS').onclick=()=>{o.nombre=$('#eoN').value.trim();o.desde=$('#eoD').value||dKey();o.hasta=$('#eoH').value;
+    if(!o.nombre)return toast('Ponle un nombre, por ejemplo «Show Navidad»');if(!o.hasta)return toast('Elige la fecha del show');if(o.hasta<o.desde)return toast('La fecha final va después de la inicial');if(!o.metas.length)return toast('Añade al menos una meta');
+    S.cfg.objetivos={...(S.cfg.objetivos||{}),[o.id]:{...o,editado:now()}};Store.cfg();closeSheet();renderAll();toast('Objetivo guardado')};
+  if($('#eoX'))$('#eoX').onclick=()=>confirmBox('¿Borrar el objetivo «'+o.nombre+'»? Tu actividad no se borra.','Borrar',()=>{const c={...(S.cfg.objetivos||{})};delete c[o.id];S.cfg.objetivos=c;Store.cfg();renderAll()})}
+
 /* --- sesiones de escritura por bloques --- */
 const SES={on:false,fin:0,modo:'bloques',min:25,desc:5,fase:'escribir',t:null,seg0:0,pal0:0,textos:new Set()};
 function edSesionBtn(){const b=$('#edSes');if(!b)return;if(!SES.on){b.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 9v4l2.5 2M9 2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';b.style.width='36px';b.style.background='none';return}
@@ -1404,11 +1471,14 @@ function recordatorioICS(hora){const [h,m]=hora.split(':').map(Number);const d=n
   toast('Abre el archivo descargado y añádelo a tu calendario')}
 function renderObjetivos(){const o=obj();
   const fila=(k,label,paso,uni)=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="font-size:13.5px">${label}</span><span style="display:flex;align-items:center;gap:8px"><button class="mv" data-ob="${k}" data-d="${-paso}">−</button><b style="min-width:54px;text-align:center">${o[k]} ${uni}</b><button class="mv" data-ob="${k}" data-d="${paso}">+</button></span></div>`;
-  $('#objBox').innerHTML=`<div class="trow"><span>Mostrar objetivos y rachas en Inicio</span><button class="tg ${o.activo?'on':''}" id="obAct"></button></div>
+  const todos=Object.values(S.cfg.objetivos||{}).sort((a,b)=>b.hasta.localeCompare(a.hasta));
+  $('#objBox').innerHTML=`<div class="lbl" style="margin-top:0">Objetivos personalizados</div>${todos.map(x=>`<button class="row" data-eo="${x.id}" style="width:100%;padding:8px 0;border-bottom:1px solid var(--line)"><span style="font-size:13.5px">${esc(x.nombre)}</span><span class="s">${fechaCorta(x.hasta)}${x.hasta<dKey()?' · terminado':''} ›</span></button>`).join('')}<button class="btn ghost sm" id="obNew" style="width:100%;margin:8px 0 14px;border-style:dashed">+ Nuevo objetivo</button>
+   <div class="lbl">Objetivos de cada día</div><div class="trow"><span>Mostrar objetivos y rachas en Inicio</span><button class="tg ${o.activo?'on':''}" id="obAct"></button></div>
    ${fila('minDia','Minutos escribiendo al día',5,'min')}${fila('ideasDia','Ideas al día',1,'')}${fila('avancesSem','Textos que avanzan de estado, por semana',1,'')}${fila('sesionesSem','Sesiones en Escenario por semana',1,'')}${fila('repertorio','Repertorio cerrado objetivo',5,'min')}
    <div class="lbl">Recordatorio diario</div><div class="s" style="margin-bottom:8px;line-height:1.5">La app no puede avisarte cerrada, pero sí crear un evento diario en tu calendario (Google Calendar), que te avisará en el móvil.</div>
    <div class="row"><input id="obH" type="time" value="${S.cfg.recHora||'18:00'}" style="width:130px"><button class="btn ghost sm" id="obIcs" style="flex:1">Añadir a mi calendario</button></div>
    ${Object.keys(S.cfg.hitos||{}).length?`<div class="lbl">Logros</div>${HITOS.filter(([k,n])=>(S.cfg.hitos||{})[k+n]).map(([k,n,t])=>`<span class="chip on">${t}</span>`).join('')}`:''}`;
+  $$('#objBox [data-eo]').forEach(b=>b.onclick=()=>verObj(b.dataset.eo));$('#obNew').onclick=()=>editObj(null);
   $('#obAct').onclick=()=>{S.cfg.obj={...o,activo:!o.activo};Store.cfg();renderAll()};
   $$('#objBox [data-ob]').forEach(b=>b.onclick=()=>{const k=b.dataset.ob,v=Math.max(0,o[k]+ +b.dataset.d);S.cfg.obj={...o,[k]:k==='repertorio'?Math.max(5,v):v};Store.cfg();renderAll()});
   $('#obIcs').onclick=()=>{S.cfg.recHora=$('#obH').value||'18:00';Store.cfg();recordatorioICS(S.cfg.recHora)}}
