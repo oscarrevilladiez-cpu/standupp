@@ -219,6 +219,10 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="row"><button class="btn ghost sm" id="bkCopy" style="flex:1">Copiar copia</button><button class="btn ghost sm" id="bkRestore" style="flex:1">Restaurar…</button></div>
     </div>
     <div class="card">
+      <div class="lbl" style="margin-top:0">Objetivos y rachas</div>
+      <div id="objBox"></div>
+    </div>
+    <div class="card">
       <div class="lbl" style="margin-top:0">Tu velocidad al hablar</div>
       <div class="s" style="margin-bottom:10px;line-height:1.5">La app calcula cuánto dura cada texto con las palabras por minuto que hablas. Ajústala a mano o calcúlala con tus ensayos del modo escenario.</div>
       <div class="row" style="justify-content:center;gap:14px"><button class="btn ghost" id="ppmM" style="width:52px">−</button><div style="text-align:center"><div id="ppmV" style="font-size:34px;font-weight:800"></div><div class="s">palabras por minuto</div></div><button class="btn ghost" id="ppmP" style="width:52px">+</button></div>
@@ -240,7 +244,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 7</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 8</div>
   </section>
 
   <!-- EDITOR -->
@@ -251,6 +255,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
         <input id="edTitle" placeholder="Título del texto">
         <div id="edStats"></div>
       </div>
+      <button class="ib" id="edSes" aria-label="Sesión de escritura" style="border-radius:10px"></button>
       <button class="ib" id="edTheme"></button>
       <button class="ib" id="edInfo"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg></button>
     </div>
@@ -323,7 +328,7 @@ const DEF_STYLES=[
 ];
 
 /* ============ estado ============ */
-const S={textos:{},ideas:{},setlists:{},pases:{},fotos:{},cfg:{tema:'dark',estilos:DEF_STYLES.map(s=>({...s}))},
+const S={act:{},textos:{},ideas:{},setlists:{},pases:{},fotos:{},cfg:{tema:'dark',estilos:DEF_STYLES.map(s=>({...s}))},
  view:'vIni',editing:null,mFilter:'todos',libTag:'',synced:false};
 
 /* ============ almacenamiento: en el aparato (IndexedDB) + Google Drive ============ */
@@ -339,7 +344,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
  async init(){
    const ok=await IDB.open();
    if(ok){S.textos=await IDB.get('textos')||{};S.ideas=await IDB.get('ideas')||{};S.setlists=await IDB.get('setlists')||{};S.pases=await IDB.get('pases')||{};const c=await IDB.get('cfg');if(c)S.cfg={...S.cfg,...c};
-     this.tomb=await IDB.get('tomb')||{};S.fotoInicio=await IDB.get('fotoInicio')||null;this.meta=await IDB.get('meta')||{};}
+     this.tomb=await IDB.get('tomb')||{};S.fotoInicio=await IDB.get('fotoInicio')||null;S.act=await IDB.get('act')||{};this.meta=await IDB.get('meta')||{};}
    Object.values(S.pases).forEach(p=>{if(!p.tipo){p.tipo='actuacion';const st=S.setlists[p.setlistId];if(st){p.items=p.items||[...(st.items||[])];p.setNombre=p.setNombre||st.nombre;p.maxMin=p.maxMin||st.maxMin}}});
    ensureFixed();applyTheme();buildStyleCSS();renderAll();setSync();
    this.loadGIS();
@@ -400,7 +405,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
          if(!m.grab)m.grab=await this.folder('Grabaciones',m.carpeta);
          const ext=(b.type.includes('mp4')?'.mp4':'.webm');const nombre=((S.setlists[p.setlistId]||{}).nombre||'pase')+' '+(p.fecha||'')+(p.grab.tipo==='video'?' (vídeo)':' (audio)')+ext;
          p.grab.driveId=await this.resumable({name:nombre,parents:[m.grab],mimeType:b.type},b);p.editado=now()}}
-     const out={app:'standupp',v:2,textos:S.textos,ideas:S.ideas,setlists:S.setlists,pases:S.pases,cfg:S.cfg,tomb:this.tomb,fotoMap:m.fotoMap,guardado:new Date().toISOString()};
+     const out={app:'standupp',v:2,act:S.act,textos:S.textos,ideas:S.ideas,setlists:S.setlists,pases:S.pases,cfg:S.cfg,tomb:this.tomb,fotoMap:m.fotoMap,guardado:new Date().toISOString()};
      const r=await this.multipart(m.material?{}:{name:'material.json',parents:[m.carpeta],mimeType:'application/json'},new Blob([JSON.stringify(out)],{type:'application/json'}),m.material);
      m.material=r.id;m.ultima=Date.now();this.dirty=false;
      IDB.set('meta',m);IDB.set('textos',S.textos);IDB.set('ideas',S.ideas);IDB.set('setlists',S.setlists);IDB.set('pases',S.pases);IDB.set('cfg',S.cfg);IDB.set('tomb',this.tomb);
@@ -416,6 +421,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
        if(w&&tomb[id]&&tomb[id]>=(w.editado||0))w=null;
        if(w!==a){changed=true;if(w)L[id]=w;else delete L[id]}
      }}
+   if(R.act){Object.entries(R.act).forEach(([k,devs])=>{if(k==='_ed')return;S.act[k]=S.act[k]||{};Object.entries(devs).forEach(([d,v])=>{const l=S.act[k][d];if(!l||(v.seg||0)>(l.seg||0))S.act[k][d]=v})});IDB.set('act',S.act)}
    if(R.cfg&&(R.cfg.editado||0)>(S.cfg.editado||0)){S.cfg={...S.cfg,...R.cfg};ensureFixed();applyTheme();buildStyleCSS();changed=true}
    if(R.fotoMap)this.meta.fotoMap={...(R.fotoMap||{}),...(this.meta.fotoMap||{})};
    if(changed&&S.view!=='vEd')renderAll();
@@ -549,12 +555,12 @@ function editIdea(i){
   const tb=tagBox($('#xG'),i.etiquetas,()=>$('#xT').value);$('#xT').oninput=()=>tb.refresh();
   $('#xC').onclick=closeSheet;$('#xS').onclick=()=>{i.texto=$('#xT').value.trim();i.etiquetas=tb.get();Store.put('ideas',i);closeSheet();renderLib()};
 }
-let qTB;setTimeout(()=>{qTB=tagBox($('#qTagBox'),[],()=>$('#qText').value);let qt;$('#qText').addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(()=>qTB.refresh(),500)})},0);
+let qTB;setTimeout(()=>{qTB=tagBox($('#qTagBox'),[],()=>$('#qText').value);let qt;$('#qText').addEventListener('input',()=>{sumaEscritura();clearTimeout(qt);qt=setTimeout(()=>qTB.refresh(),500)})},0);
 $('#qSave').onclick=async()=>{
   const txt=$('#qText').value.trim();if(!txt&&!qFoto)return toast('Escribe algo o añade una foto');
   const i={id:uid(),texto:txt,etiquetas:qTB.get(),creado:now()};
   if(qFoto){i.fotoId='f'+i.id;await Store.putFoto(i.fotoId,qFoto)}
-  S.ideas[i.id]=i;Store.put('ideas',i);
+  S.ideas[i.id]=i;Store.put('ideas',i);sumaIdea();
   $('#qText').value='';qTB.set([]);qFoto=null;$('#qPrev').innerHTML='';renderLib();toast('Idea guardada');
 };
 $('#qPhoto').onclick=()=>$('#qFile').click();
@@ -600,7 +606,7 @@ function renderBoard(){
       <div class="s" style="margin:3px 0 8px">${t.stats?`${t.stats.remates} remates · ${durTxt(minOf(t.stats))}`:'—'}${t.stats&&t.stats.pend?` · <span style="color:var(--amber)">${t.stats.pend} pend.</span>`:''}${notaMedia(t.id)!=null?` · <b style="color:var(--pink)">★ ${notaMedia(t.id).toFixed(1).replace('.',',')}</b>`:''}</div>
       <div class="row"><button class="mv" data-mv="${t.id}" data-d="-1" ${ci===0?'style="visibility:hidden"':''}>‹</button><button class="mv" data-mv="${t.id}" data-d="1" ${ci===cols.length-1?'style="visibility:hidden"':''}>›</button></div></div>`).join('')||'<div class="s" style="padding:10px 4px">Vacío</div>'}</div>`}).join('');
   $$('#board [data-open]').forEach(b=>b.onclick=()=>openEditor(b.dataset.open));
-  $$('#board [data-mv]').forEach(b=>b.onclick=()=>{const t=S.textos[b.dataset.mv];const ks=cols.map(c=>c[0]);const i=ks.indexOf(t.estado)+ +b.dataset.d;if(i<0||i>=ks.length)return;t.estado=ks[i];t.editado=now();Store.put('textos',t);renderBoard()});
+  $$('#board [data-mv]').forEach(b=>b.onclick=()=>{const t=S.textos[b.dataset.mv];const ks=cols.map(c=>c[0]);const i=ks.indexOf(t.estado)+ +b.dataset.d;if(i<0||i>=ks.length)return;marcaAvance(t.estado,ks[i]);t.estado=ks[i];t.editado=now();Store.put('textos',t);renderBoard()});
 }
 
 /* --- Ajustes --- */
@@ -608,6 +614,7 @@ $('#fiCam').onclick=()=>$('#fiFile').click();
 $('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);S.fotoInicio=d;await IDB.set('fotoInicio',d);renderIni();toast('Imagen de inicio cambiada')};
 $('#fiDel').onclick=async()=>{S.fotoInicio=null;await IDB.del('fotoInicio');renderIni();toast('Vuelve la ilustración')};
 function renderAjustes(){
+  renderObjetivos();
   $('#ppmV').textContent=PPM();$('#ppmM').onclick=()=>setPPM(PPM()-5);$('#ppmP').onclick=()=>setPPM(PPM()+5);
   const pm=ppmMedia();$('#ppmE').textContent=pm?`Calcular con mis ensayos (${pm.ppm} pal/min, media de ${pm.n})`:'Aún no hay ensayos: haz uno en Modo escenario → Ensayo';$('#ppmE').disabled=!pm;$('#ppmE').style.opacity=pm?1:.5;
   $('#ppmE').onclick=()=>{if(pm)setPPM(pm.ppm)};
@@ -636,15 +643,15 @@ try{document.execCommand('defaultParagraphSeparator',false,'p')}catch(e){}
 function openEditor(id,focusTitle){
   const t=S.textos[id];if(!t)return;S.backTo=S.view==='vEd'?S.backTo:S.view;S.editing=id;
   t._lastTitle=t.titulo;$('#edTitle').value=t.titulo||'';ed.innerHTML=t.html||'<p><br></p>';
-  hydrateImgs(ed);go('vEd');hReset();renderStyleBar();renderFmtBar();updateStats();
+  hydrateImgs(ed);go('vEd');hReset();edSesionBtn();if(SES.on)SES.textos.add(id);renderStyleBar();renderFmtBar();updateStats();
   $('#edWrap').scrollTop=0;
   setTimeout(()=>{if(focusTitle)$('#edTitle').focus()},60);
 }
 function closeEditor(){flushSave();S.editing=null;go(S.backTo||'vMesa')}
-$('#edBack').onclick=closeEditor;
+$('#edBack').onclick=closeEditor;$('#edSes').onclick=menuSesion;
 $('#edTheme').onclick=()=>setTheme(S.cfg.tema==='light'?'dark':'light');
-$('#edTitle').oninput=()=>{const t=S.textos[S.editing];if(!t)return;t.titulo=$('#edTitle').value;scheduleSave()};
-ed.addEventListener('input',e=>{
+$('#edTitle').oninput=()=>{sumaEscritura();const t=S.textos[S.editing];if(!t)return;t.titulo=$('#edTitle').value;scheduleSave()};
+ed.addEventListener('input',e=>{sumaEscritura();if(SES.on&&S.editing)SES.textos.add(S.editing);
   if(!ed.firstChild||ed.firstChild.nodeType===3){const p=document.createElement('p');while(ed.firstChild)p.appendChild(ed.firstChild);if(!p.firstChild)p.innerHTML='<br>';ed.appendChild(p);placeCaretEnd(p)}
   if(e.inputType==='insertParagraph'){const b=curBlock();if(b&&b.dataset.st&&!b.textContent.trim())delete b.dataset.st;
     b&&b.querySelectorAll('span[data-st]').forEach(s=>{if(!s.textContent.replace(/​/g,'').trim())s.replaceWith(...s.childNodes)})}
@@ -658,7 +665,9 @@ function flushSave(){clearTimeout(saveT);const t=S.textos[S.editing];if(!t)retur
   c.querySelectorAll('span[data-st]').forEach(s=>{if(!s.textContent.replace(/​/g,''))s.remove()});
   const html=c.innerHTML.replace(/​/g,'');const st=computeStats();
   if(html===t.html&&t.titulo===t._lastTitle)return;
+  const s0=statsOf(t),p0=(s0.prem||0)+(s0.rem||0)+(s0.otras||0);
   t.html=html;t._lastTitle=t.titulo;t.stats=st;t.editado=now();
+  const p1=(st.prem||0)+(st.rem||0)+(st.otras||0);sumaPalabras(p1-p0);
   Store.put('textos',{...t,_lastTitle:undefined});
 }
 window.addEventListener('pagehide',flushSave);
@@ -734,7 +743,7 @@ ed.addEventListener('focus',()=>setTimeout(placeBars,300));
 let statsT;function updateStatsSoon(){clearTimeout(statsT);statsT=setTimeout(updateStats,400)}
 function computeStats(root){root=root||ed;
   const byId=Object.fromEntries(S.cfg.estilos.map(s=>[s.id,s]));
-  let prem=0,rem=0,remates=0,pend=0,run=0,maxRun=0,frasesP=0,frasesR=0;
+  let prem=0,rem=0,remates=0,pend=0,run=0,maxRun=0,frasesP=0,frasesR=0,otras=0;
   const counted=new Set();
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;
   while(n=walker.nextNode()){
@@ -742,12 +751,12 @@ function computeStats(root){root=root||ed;
     let el=n.parentNode,st=null,host=null;while(el&&el!==ed){if(el.dataset&&el.dataset.st&&byId[el.dataset.st]){st=byId[el.dataset.st];host=el;break}el=el.parentNode}
     if(st&&st.pendiente){if(!counted.has(host)){counted.add(host);pend++}continue}
     if(st&&st.cuentaRemate){rem+=words;if(!counted.has(host)){counted.add(host);remates++;frasesR++}run=0;continue}
-    if(st&&!st.cuentaTiempo)continue;
+    if(st&&!st.cuentaTiempo){otras+=words;continue}
     prem+=words;run+=words;maxRun=Math.max(maxRun,run);
     frasesP+=(n.textContent.match(/[.!?…»]+(\s|$)/g)||[]).length||0;
   }
   const min=(prem+rem)/PPM();
-  return {prem,rem,remates,pend,min,rpm:min>0?remates/min:0,maxRun,frasesP,frasesR};
+  return {prem,rem,otras,remates,pend,min,rpm:min>0?remates/min:0,maxRun,frasesP,frasesR};
 }
 function updateStats(){if(S.view!=='vEd')return;const s=computeStats();const tot=s.prem+s.rem;
   $('#edStats').textContent=`${s.remates} remates · ${tot?Math.round(s.rem/tot*100):0}% remate · ${s.rpm.toFixed(1).replace('.',',')}/min${s.pend?` · ${s.pend} pendiente${s.pend>1?'s':''}`:''}`}
@@ -772,10 +781,10 @@ $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
   <div class="lbl">Pases de este texto</div>${pasesDe(t.id).map(p=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:13px">${esc(p.local||'Sin local')} <span class="s">· ${fechaCorta(p.fecha)}</span></span>${starsTxt(p.notas[t.id])}</div>`).join('')||'<div class="s">Aún no se ha probado en ningún pase.</div>'}
   <div class="s" style="margin-top:14px">Creado ${fecha(t.creado)} · editado ${fecha(t.editado)}</div>
   <div class="row" style="margin-top:16px"><button class="btn ghost" id="fDel" style="flex:1">Borrar texto</button><button class="btn" id="fOk" style="flex:1">Hecho</button></div>`);
-  const ftb=tagBox($('#fT'),t.etiquetas,()=>(t.titulo||'')+' '+strip(t.html));
+  const est0=t.estado;const ftb=tagBox($('#fT'),t.etiquetas,()=>(t.titulo||'')+' '+strip(t.html));
   $$('#fE .chip').forEach(c=>c.onclick=()=>{t.estado=c.dataset.e;$$('#fE .chip').forEach(x=>x.classList.toggle('on',x===c))});
   $$('#fC .chip').forEach(c=>c.onclick=()=>{t.categoria=c.dataset.c;$$('#fC .chip').forEach(x=>x.classList.toggle('on',x===c))});
-  $('#fOk').onclick=()=>{t.etiquetas=ftb.get();t.editado=now();Store.put('textos',t);closeSheet()};
+  $('#fOk').onclick=()=>{marcaAvance(est0,t.estado);t.etiquetas=ftb.get();t.editado=now();Store.put('textos',t);closeSheet()};
   $('#fDel').onclick=()=>confirmBox('¿Borrar «'+(t.titulo||'Sin título')+'»? No se puede deshacer.','Borrar',()=>{delete S.textos[t.id];Store.del('textos',t.id);Object.values(S.ideas).forEach(i=>{if(i.pasada===t.id){delete i.pasada;Store.put('ideas',i)}});S.editing=null;go('vMesa')});
 };
 
@@ -1302,6 +1311,7 @@ async function renderIni(){
      ${[['idea','+ Idea','Apunta algo rápido'],['texto','Nuevo texto','Escribe en la Mesa'],['ensayo','Ensayar','Modo escenario'],['sets','Setlists','Prepara un show']].map(([k,t,d])=>`<button class="card" data-q="${k}" style="text-align:left;margin:0;${k==='idea'?'border-color:var(--pink)':''}"><div class="t" style="${k==='idea'?'color:var(--pink)':''}">${t}</div><div class="s" style="margin-top:3px">${d}</div></button>`).join('')}
    </div>
    ${prox?`<div class="lbl">Próximo show</div><div class="card" data-set="${prox.id}" style="cursor:pointer;border-color:rgba(255,62,142,.45)"><div class="row"><div class="t">${esc(prox.nombre||'Setlist')}</div><span class="st-chip e-cerrado">${prox.fecha===hoy?'Hoy':fechaCorta(prox.fecha)}</span></div><div class="s" style="margin-top:4px">${esc(prox.local||'Sin local')} · ${(prox.items||[]).length} textos · ${durTxt(setDur(prox))} de ${prox.maxMin}:00</div></div>`:''}
+   ${bloqueMotivacion()}
    <div class="lbl">Tu material</div>
    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px">
      ${[[Object.keys(S.ideas).length,'ideas'],[T.length,'textos'],[durTxt(rep),'min cerrados'],[pend,'pendientes']].map(([n,l])=>`<div class="stat" style="padding:10px 8px;text-align:center"><b style="font-size:19px">${n}</b><span class="s" style="font-size:11px">${l}</span></div>`).join('')}
@@ -1314,6 +1324,94 @@ async function renderIni(){
   $$('#iniBody [data-t]').forEach(b=>b.onclick=()=>openEditor(b.dataset.t));
   $$('#iniBody [data-p]').forEach(b=>b.onclick=()=>{go('vSes');abrirSesion(b.dataset.p)});
 }
+
+/* ============ tiempo y motivación ============ */
+const OBJ_DEF={minDia:30,ideasDia:2,avancesSem:2,sesionesSem:2,repertorio:20,activo:true};
+const obj=()=>({...OBJ_DEF,...(S.cfg.obj||{})});
+const dKey=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function devId(){if(!Store.meta.dev){Store.meta.dev='d'+uid();IDB.set('meta',Store.meta)}return Store.meta.dev}
+function actHoy(){const k=dKey(),d=devId();S.act[k]=S.act[k]||{};S.act[k][d]=S.act[k][d]||{seg:0,pal:0,ideas:0,av:0};return S.act[k][d]}
+function diaTot(k){const o=S.act[k]||{};return Object.values(o).reduce((a,x)=>({seg:a.seg+(x.seg||0),pal:a.pal+(x.pal||0),ideas:a.ideas+(x.ideas||0),av:a.av+(x.av||0)}),{seg:0,pal:0,ideas:0,av:0})}
+let actT=null,lastInput=0;
+function sumaEscritura(){const n=Date.now(),d=n-lastInput;lastInput=n;if(d>0&&d<60000){actHoy().seg+=d/1000;guardaAct()}}
+function guardaAct(){clearTimeout(actT);actT=setTimeout(()=>{S.act._ed=now();IDB.set('act',S.act);Store.dirty=true;Store.syncSoon(8000);comprobarHitos()},1500)}
+function sumaPalabras(n){if(n>0){actHoy().pal+=n;guardaAct()}}
+function sumaIdea(){actHoy().ideas++;guardaAct()}
+const RANGO={idea:0,borrador:1,pruebas:2,funciona:3,cerrado:4,cementerio:-1};
+function marcaAvance(antes,despues){if((RANGO[despues]??-1)>(RANGO[antes]??-1)&&despues!=='cementerio'){actHoy().av++;guardaAct()}}
+function minHoy(){return diaTot(dKey()).seg/60}
+function cumple(k){const o=obj();return diaTot(k).seg/60>=o.minDia}
+function racha(){const o=obj();if(!o.minDia)return 0;let n=0,d=new Date(),comodin={};
+  if(!cumple(dKey(d)))d.setDate(d.getDate()-1);
+  for(let i=0;i<400;i++){const k=dKey(d);if(cumple(k))n++;else{const sem=semanaKey(d);if(!comodin[sem]&&n>0){comodin[sem]=1}else break}d.setDate(d.getDate()-1)}
+  return n}
+function semanaKey(d){const x=new Date(d);const dia=(x.getDay()+6)%7;x.setDate(x.getDate()-dia);return dKey(x)}
+function semanaActual(){const lunes=semanaKey(new Date());let av=0,ideas=0;for(let i=0;i<7;i++){const x=new Date(lunes+'T12:00:00');x.setDate(x.getDate()+i);const t=diaTot(dKey(x));av+=t.av;ideas+=t.ideas}
+  const ses=Object.values(S.pases).filter(p=>p.fecha&&p.fecha>=lunes).length;return {av,ses,ideas}}
+function repertorioMin(){return Object.values(S.textos).filter(t=>t.estado==='cerrado').reduce((a,t)=>a+minOf(statsOf(t)),0)}
+const HITOS=[['ideas',10,'10 ideas apuntadas'],['ideas',50,'50 ideas apuntadas'],['ideas',200,'200 ideas'],['cerrados',1,'Tu primer texto cerrado'],['cerrados',10,'10 textos cerrados'],['sesiones',1,'Primera vez en Escenario'],['sesiones',25,'25 sesiones en Escenario'],['racha',7,'Una semana de racha'],['racha',30,'Un mes de racha'],['horas',10,'10 horas escribiendo']];
+function valoresHito(){let seg=0;Object.keys(S.act).forEach(k=>{if(k!=='_ed')seg+=diaTot(k).seg});return {ideas:Object.keys(S.ideas).length,cerrados:Object.values(S.textos).filter(t=>t.estado==='cerrado').length,sesiones:Object.keys(S.pases).length,racha:racha(),horas:seg/3600}}
+function comprobarHitos(){const v=valoresHito(),h=S.cfg.hitos||{};let nuevo=null;HITOS.forEach(([k,n,txt])=>{const id=k+n;if(!h[id]&&v[k]>=n){h[id]=dKey();nuevo=txt}});if(nuevo){S.cfg.hitos=h;Store.cfg();toast('Logro conseguido: '+nuevo)}}
+function anillo(p,size,txt,sub){const r=size/2-8,c=2*Math.PI*r,v=Math.min(1,p);return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="var(--panel2)" stroke-width="10" fill="none"/><circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${v>=1?'var(--green)':'var(--pink)'}" stroke-width="10" fill="none" stroke-linecap="round" stroke-dasharray="${c*v} ${c}" transform="rotate(-90 ${size/2} ${size/2})"/><text x="50%" y="48%" text-anchor="middle" fill="var(--ink)" font-size="${size/4.6}" font-weight="800" font-family="Inter">${txt}</text><text x="50%" y="66%" text-anchor="middle" fill="var(--mute)" font-size="${size/10}" font-family="Inter">${sub}</text></svg>`}
+function calorHTML(sem){const o=obj(),hoy=new Date(),ini=new Date(semanaKey(hoy)+'T12:00:00');ini.setDate(ini.getDate()-7*(sem-1));let cells='';
+  for(let w=0;w<sem;w++)for(let d=0;d<7;d++){const x=new Date(ini);x.setDate(x.getDate()+w*7+d);const k=dKey(x),fut=x>hoy,m=diaTot(k).seg/60,r=o.minDia?m/o.minDia:(m>0?1:0);
+    const a=fut?0:m<=0?0:r<.34?.25:r<.67?.5:r<1?.75:1;cells+=`<div title="${k}: ${Math.round(m)} min" style="border-radius:3px;background:${fut?'transparent':a?`rgba(255,62,142,${a})`:'var(--panel2)'};${k===dKey()?'outline:1.5px solid var(--ink);':''}"></div>`}
+  return `<div style="display:grid;grid-template-rows:repeat(7,1fr);grid-auto-flow:column;gap:3px;aspect-ratio:${sem}/7;width:100%">${cells}</div><div class="row s" style="margin-top:6px;font-size:11px"><span>Hace ${sem} semanas</span><span>Menos <span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--panel2)"></span> <span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:rgba(255,62,142,.5)"></span> <span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--pink)"></span> Más</span></div>`}
+function bloqueMotivacion(){const o=obj();if(!o.activo)return '';const t=diaTot(dKey()),m=t.seg/60,sem=semanaActual(),rep=repertorioMin(),ra=racha();
+  return `<div class="card" style="display:flex;gap:16px;align-items:center">
+    ${anillo(o.minDia?m/o.minDia:0,104,Math.floor(m),o.minDia?`de ${o.minDia} min`:'min hoy')}
+    <div style="flex:1;min-width:0"><div class="lbl" style="margin:0 0 4px">Hoy</div>
+      <div class="t" style="font-size:15px">${!o.minDia?'Escribiendo hoy':m>=o.minDia?'¡Objetivo cumplido!':`Te faltan ${Math.ceil(o.minDia-m)} min`}</div>
+      <div class="s" style="margin:4px 0 8px">${t.ideas} de ${o.ideasDia} ideas · ${t.pal} palabras nuevas</div>
+      <span class="chip on" style="margin:0">${ra?`Racha · ${ra} día${ra>1?'s':''}`:'Empieza tu racha hoy'}</span></div></div>
+   <div class="card"><div class="row" style="margin-bottom:8px"><div class="lbl" style="margin:0">Últimas 16 semanas</div><span class="s">1 comodín por semana</span></div>${calorHTML(16)}</div>
+   <div class="card"><div class="row" style="margin-bottom:8px"><div class="lbl" style="margin:0">Repertorio cerrado</div><div class="t">${durTxt(rep)} <span class="s">/ ${o.repertorio} min</span></div></div>
+     <div class="split"><div style="width:${Math.min(100,rep/o.repertorio*100)}%;background:var(--pink)"></div></div>
+     <div class="row s" style="margin-top:10px"><span>Esta semana: ${sem.av}/${o.avancesSem} textos avanzan</span><span>${sem.ses}/${o.sesionesSem} sesiones</span></div></div>`}
+
+/* --- sesiones de escritura por bloques --- */
+const SES={on:false,fin:0,modo:'bloques',min:25,desc:5,fase:'escribir',t:null,seg0:0,pal0:0,textos:new Set()};
+function edSesionBtn(){const b=$('#edSes');if(!b)return;if(!SES.on){b.innerHTML='<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 9v4l2.5 2M9 2h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';b.style.width='36px';b.style.background='none';return}
+  const r=Math.max(0,SES.fin-Date.now())/1000;b.style.width='auto';b.style.padding='0 9px';b.style.background=SES.fase==='descanso'?'rgba(61,220,151,.15)':'var(--pinkSoft)';
+  b.innerHTML=`<span style="font-size:12.5px;font-weight:800;color:${SES.fase==='descanso'?'var(--green)':'var(--pink)'}">${SES.modo==='libre'?mmss((Date.now()-SES.ini)/1000):mmss(r)}</span>`}
+function iniciaSesion(modo,min){Object.assign(SES,{on:true,modo,min,fase:'escribir',ini:Date.now(),fin:Date.now()+min*60000,seg0:diaTot(dKey()).seg,pal0:diaTot(dKey()).pal,textos:new Set(S.editing?[S.editing]:[])});
+  clearInterval(SES.t);SES.t=setInterval(()=>{if(SES.modo==='bloques'&&Date.now()>=SES.fin){
+      try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+      if(SES.fase==='escribir'){SES.fase='descanso';SES.fin=Date.now()+SES.desc*60000;toast('¡Bloque terminado! Descansa '+SES.desc+' minutos')}else{SES.fase='escribir';SES.fin=Date.now()+SES.min*60000;toast('A escribir: nuevo bloque de '+SES.min+' minutos')}}
+    edSesionBtn()},1000);edSesionBtn()}
+function terminaSesion(){clearInterval(SES.t);const t=diaTot(dKey()),m=Math.round((t.seg-SES.seg0)/60),p=t.pal-SES.pal0,n=SES.textos.size;SES.on=false;edSesionBtn();
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:12px">Sesión terminada</div>
+   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"><div class="stat"><b>${m}</b><span class="s">min escribiendo</span></div><div class="stat"><b>${p}</b><span class="s">palabras nuevas</span></div><div class="stat"><b>${n}</b><span class="s">texto${n===1?'':'s'}</span></div></div>
+   <div class="s" style="margin-top:12px;line-height:1.5">Solo cuentan los minutos en los que has escrito: si paras más de un minuto, ese rato no suma.</div>
+   <button class="btn" id="tsOk" style="width:100%;margin-top:14px">Hecho</button>`);$('#tsOk').onclick=closeSheet}
+function menuSesion(){if(SES.on)return confirmBox('¿Terminar la sesión de escritura?','Terminar',terminaSesion);
+  let modo=S.cfg.sesModo||'bloques',min=S.cfg.sesMin||25;
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:4px">Sesión de escritura</div><div class="s" style="margin-bottom:12px">Un cronómetro discreto arriba. Al terminar verás minutos, palabras nuevas y textos tocados.</div>
+   <div class="seg" id="smM"><button data-m="bloques" class="${modo==='bloques'?'on':''}">Por bloques</button><button data-m="libre" class="${modo==='libre'?'on':''}">Libre</button></div>
+   <div id="smB" style="margin-top:12px"><div class="lbl">Duración del bloque</div><div class="seg" id="smD">${[15,25,45,60].map(v=>`<button data-v="${v}" class="${min===v?'on':''}">${v} min</button>`).join('')}</div><div class="s" style="margin-top:6px">Después de cada bloque, 5 minutos de descanso. El móvil vibra al cambiar.</div></div>
+   <button class="btn" id="smGo" style="width:100%;margin-top:16px">Empezar</button>`);
+  const vis=()=>$('#smB').style.display=modo==='bloques'?'block':'none';vis();
+  $$('#smM button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;$$('#smM button').forEach(x=>x.classList.toggle('on',x===b));vis()});
+  $$('#smD button').forEach(b=>b.onclick=()=>{min=+b.dataset.v;$$('#smD button').forEach(x=>x.classList.toggle('on',x===b))});
+  $('#smGo').onclick=()=>{S.cfg.sesModo=modo;S.cfg.sesMin=min;Store.cfg();closeSheet();iniciaSesion(modo,min)}}
+
+/* --- recordatorio diario como evento de calendario --- */
+function recordatorioICS(hora){const [h,m]=hora.split(':').map(Number);const d=new Date();d.setHours(h,m,0,0);if(d<new Date())d.setDate(d.getDate()+1);
+  const f=x=>x.getFullYear()+String(x.getMonth()+1).padStart(2,'0')+String(x.getDate()).padStart(2,'0')+'T'+String(x.getHours()).padStart(2,'0')+String(x.getMinutes()).padStart(2,'0')+'00';
+  const fin=new Date(d.getTime()+obj().minDia*60000||1800000);
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//stand UPP comedy//ES','BEGIN:VEVENT','UID:standupp-escribir-'+uid()+'@standupp','DTSTAMP:'+f(new Date()),'DTSTART:'+f(d),'DTEND:'+f(fin),'RRULE:FREQ=DAILY','SUMMARY:Escribir comedia (stand UPP)','DESCRIPTION:Hoy toca escribir: abre stand UPP comedy. Objetivo '+obj().minDia+' minutos.','BEGIN:VALARM','TRIGGER:PT0M','ACTION:DISPLAY','DESCRIPTION:Hora de escribir','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='recordatorio-escribir.ics';document.body.appendChild(a);a.click();a.remove();
+  toast('Abre el archivo descargado y añádelo a tu calendario')}
+function renderObjetivos(){const o=obj();
+  const fila=(k,label,paso,uni)=>`<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)"><span style="font-size:13.5px">${label}</span><span style="display:flex;align-items:center;gap:8px"><button class="mv" data-ob="${k}" data-d="${-paso}">−</button><b style="min-width:54px;text-align:center">${o[k]} ${uni}</b><button class="mv" data-ob="${k}" data-d="${paso}">+</button></span></div>`;
+  $('#objBox').innerHTML=`<div class="trow"><span>Mostrar objetivos y rachas en Inicio</span><button class="tg ${o.activo?'on':''}" id="obAct"></button></div>
+   ${fila('minDia','Minutos escribiendo al día',5,'min')}${fila('ideasDia','Ideas al día',1,'')}${fila('avancesSem','Textos que avanzan de estado, por semana',1,'')}${fila('sesionesSem','Sesiones en Escenario por semana',1,'')}${fila('repertorio','Repertorio cerrado objetivo',5,'min')}
+   <div class="lbl">Recordatorio diario</div><div class="s" style="margin-bottom:8px;line-height:1.5">La app no puede avisarte cerrada, pero sí crear un evento diario en tu calendario (Google Calendar), que te avisará en el móvil.</div>
+   <div class="row"><input id="obH" type="time" value="${S.cfg.recHora||'18:00'}" style="width:130px"><button class="btn ghost sm" id="obIcs" style="flex:1">Añadir a mi calendario</button></div>
+   ${Object.keys(S.cfg.hitos||{}).length?`<div class="lbl">Logros</div>${HITOS.filter(([k,n])=>(S.cfg.hitos||{})[k+n]).map(([k,n,t])=>`<span class="chip on">${t}</span>`).join('')}`:''}`;
+  $('#obAct').onclick=()=>{S.cfg.obj={...o,activo:!o.activo};Store.cfg();renderAll()};
+  $$('#objBox [data-ob]').forEach(b=>b.onclick=()=>{const k=b.dataset.ob,v=Math.max(0,o[k]+ +b.dataset.d);S.cfg.obj={...o,[k]:k==='repertorio'?Math.max(5,v):v};Store.cfg();renderAll()});
+  $('#obIcs').onclick=()=>{S.cfg.recHora=$('#obH').value||'18:00';Store.cfg();recordatorioICS(S.cfg.recHora)}}
 
 /* ============ editor de estilos ============ */
 function editStyle(id){
