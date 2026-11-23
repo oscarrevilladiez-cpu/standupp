@@ -140,6 +140,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div id="qTagBox"></div>
       <div class="row">
         <span style="flex:1"></span>
+        <button class="btn ghost sm" id="qVoz" title="Nota de voz"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
         <button class="btn ghost sm" id="qPhoto" title="Foto"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="13" r="3.5" stroke="currentColor" stroke-width="2" fill="none"/></svg></button>
         <button class="btn sm" id="qSave">Guardar</button>
       </div>
@@ -219,6 +220,10 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="row"><button class="btn ghost sm" id="bkCopy" style="flex:1">Copiar copia</button><button class="btn ghost sm" id="bkRestore" style="flex:1">Restaurar…</button></div>
     </div>
     <div class="card">
+      <div class="lbl" style="margin-top:0">Inteligencia artificial (opcional)</div>
+      <div id="iaBox"></div>
+    </div>
+    <div class="card">
       <div class="lbl" style="margin-top:0">Objetivos y rachas</div>
       <div id="objBox"></div>
     </div>
@@ -244,7 +249,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 8.1</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.0</div>
   </section>
 
   <!-- EDITOR -->
@@ -344,7 +349,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
  async init(){
    const ok=await IDB.open();
    if(ok){S.textos=await IDB.get('textos')||{};S.ideas=await IDB.get('ideas')||{};S.setlists=await IDB.get('setlists')||{};S.pases=await IDB.get('pases')||{};const c=await IDB.get('cfg');if(c)S.cfg={...S.cfg,...c};
-     this.tomb=await IDB.get('tomb')||{};S.fotoInicio=await IDB.get('fotoInicio')||null;S.act=await IDB.get('act')||{};this.meta=await IDB.get('meta')||{};}
+     this.tomb=await IDB.get('tomb')||{};S.fotoInicio=await IDB.get('fotoInicio')||null;S.act=await IDB.get('act')||{};await IA.cargar();this.meta=await IDB.get('meta')||{};}
    Object.values(S.pases).forEach(p=>{if(!p.tipo){p.tipo='actuacion';const st=S.setlists[p.setlistId];if(st){p.items=p.items||[...(st.items||[])];p.setNombre=p.setNombre||st.nombre;p.maxMin=p.maxMin||st.maxMin}}});
    ensureFixed();applyTheme();buildStyleCSS();renderAll();setSync();
    this.loadGIS();
@@ -399,6 +404,8 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
      const ids=new Set();Object.values(S.ideas).forEach(i=>i.fotoId&&ids.add(i.fotoId));Object.values(S.textos).forEach(t=>(t.html||'').replace(/data-foto="([^"]+)"/g,(_,x)=>ids.add(x)));
      for(const id of ids){if(m.fotoMap[id])continue;const d=S.fotos[id]||await IDB.get('foto:'+id);if(!d)continue;const r=await this.multipart({name:id+'.jpg',parents:[m.fotos]},dataToBlob(d));m.fotoMap[id]=r.id}
      for(const k of Object.keys(this.tomb)){if(k.startsWith('foto:')){const id=k.slice(5);if(m.fotoMap[id]){try{await this.api('files/'+m.fotoMap[id],{method:'DELETE'})}catch(e){}delete m.fotoMap[id]}}}
+     for(const i of Object.values(S.ideas)){if(!i.voz||i.voz.driveId)continue;const b=await IDB.get('voz:'+i.id);if(!b)continue;if(!m.grab)m.grab=await this.folder('Grabaciones',m.carpeta);
+       i.voz.driveId=await this.resumable({name:'Nota de voz '+new Date(i.creado).toISOString().slice(0,16).replace('T',' ')+(b.type.includes('mp4')?'.m4a':'.webm'),parents:[m.grab],mimeType:b.type},b);i.editado=now()}
      const pol=S.cfg.subirGrab||'wifi',ct=navigator.connection&&navigator.connection.type;
      if(pol==='siempre'||(pol==='wifi'&&(!ct||ct==='wifi'||ct==='ethernet'))){
        for(const p of Object.values(S.pases)){if(!p.grab||p.grab.driveId)continue;const b=await IDB.get('grab:'+p.id);if(!b)continue;
@@ -521,6 +528,7 @@ function renderLib(){
   $('#libList').innerHTML=list.length?list.map(i=>`
     <div class="card" data-id="${i.id}">
       ${i.fotoId?`<img class="ideaimg" data-foto="${i.fotoId}" alt="">`:''}
+      ${i.voz?`<div class="row" style="margin-bottom:8px"><audio data-voz="${i.id}" controls preload="none" style="flex:1;height:36px"></audio>${IA.on()&&IA.audio()&&!i.voz.transcrita?`<button class="btn ghost sm" data-a="trans">Transcribir</button>`:''}</div>`:''}
       ${i.texto?`<div style="font-size:14.5px;line-height:1.5;white-space:pre-wrap">${esc(i.texto)}</div>`:''}
       <div class="row" style="margin-top:8px;align-items:flex-end">
         <div>${(i.etiquetas||[]).map(t=>`<span class="chip">${esc(t)}</span>`).join('')}${i.pasada?'<span class="chip on">En la Mesa</span>':''}</div>
@@ -533,16 +541,17 @@ function renderLib(){
       </div>
     </div>`).join(''):`<div class="empty">Aún no hay ideas.<br>Escribe arriba lo que se te ocurra, o haz una foto.</div>`;
   $$('#libList .card').forEach(c=>{const id=c.dataset.id;c.querySelectorAll('button').forEach(b=>b.onclick=()=>ideaAction(id,b.dataset.a))});
-  hydrateImgs($('#libList'));
+  hydrateImgs($('#libList'));hydrateVoz($('#libList'));
 }
 async function hydrateImgs(root){for(const im of root.querySelectorAll('img[data-foto]')){if(!im.src||im.src===location.href){const d=await Store.getFoto(im.dataset.foto);if(d)im.src=d;else im.alt='(foto no disponible)'}}}
 function ideaAction(id,a){
   const i=S.ideas[id];if(!i)return;
-  if(a==='del')return confirmBox('¿Borrar esta idea?','Borrar',()=>{if(i.fotoId)Store.delFoto(i.fotoId);delete S.ideas[id];Store.del('ideas',id);renderLib()});
+  if(a==='del')return confirmBox('¿Borrar esta idea?','Borrar',()=>{if(i.fotoId)Store.delFoto(i.fotoId);if(i.voz){IDB.del('voz:'+i.id);if(i.voz.driveId)Store.tomb['drv:'+i.voz.driveId]=now()}delete S.ideas[id];Store.del('ideas',id);renderLib()});
   if(a==='edit')return editIdea(i);
+  if(a==='trans')return transcribirIdea(id);
   if(a==='mesa'){
     if(i.pasada&&S.textos[i.pasada])return openEditor(i.pasada);
-    const t=newTexto((i.texto||'Idea con foto').split('\n')[0].slice(0,60));
+    const t=newTexto((i.texto||(i.voz?'Nota de voz':'Idea con foto')).split('\n')[0].slice(0,60));
     t.etiquetas=[...(i.etiquetas||[])];
     t.html=(i.fotoId?`<p><img data-foto="${i.fotoId}"></p>`:'')+(i.texto||'').split('\n').map(l=>`<p>${esc(l)||'<br>'}</p>`).join('');
     t.estado='idea';Store.put('textos',t);
@@ -563,11 +572,11 @@ $('#qSave').onclick=async()=>{
   S.ideas[i.id]=i;Store.put('ideas',i);sumaIdea();
   $('#qText').value='';qTB.set([]);qFoto=null;$('#qPrev').innerHTML='';renderLib();toast('Idea guardada');
 };
-$('#qPhoto').onclick=()=>$('#qFile').click();
-$('#qOcr').onclick=()=>{if(!Store.hasToken())return toast(Store.meta.conectado?'Pulsa arriba para reconectar con Google':'Conecta tu Google Drive en Ajustes para leer fotos');$('#qOcrFile').click()};
+$('#qPhoto').onclick=()=>$('#qFile').click();$('#qVoz').onclick=grabarNota;
+$('#qOcr').onclick=()=>{if(!(IA.on()&&S.cfg.iaFoto!==false)&&!Store.hasToken())return toast(Store.meta.conectado?'Pulsa arriba para reconectar con Google':'Conecta tu Google Drive en Ajustes para leer fotos');$('#qOcrFile').click()};
 $('#qOcrFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
   const big=await shrink(f,1800,.88);qFoto=await shrink(f);toast('Leyendo la foto…');
-  try{const txt=await Store.ocr(big);const q=$('#qText');q.value=(q.value?q.value+'\n':'')+(txt||'');
+  try{const txt=IA.on()&&S.cfg.iaFoto!==false?await IA.leerFoto(big):await Store.ocr(big);const q=$('#qText');q.value=(q.value?q.value+'\n':'')+(txt||'');
     $('#qPrev').innerHTML=`<div class="row"><img src="${qFoto}" style="height:70px;border-radius:8px"><span class="s" style="flex:1">${txt?'Texto leído: revísalo arriba y guarda':'No se ha encontrado texto en la foto'}</span><button class="btn ghost sm" id="qPx">Quitar foto</button></div>`;
     $('#qPx').onclick=()=>{qFoto=null;$('#qPrev').innerHTML=''};q.focus();
   }catch(err){toast('No se ha podido leer la foto. Comprueba la conexión con Google')}};
@@ -614,6 +623,7 @@ $('#fiCam').onclick=()=>$('#fiFile').click();
 $('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);S.fotoInicio=d;await IDB.set('fotoInicio',d);renderIni();toast('Imagen de inicio cambiada')};
 $('#fiDel').onclick=async()=>{S.fotoInicio=null;await IDB.del('fotoInicio');renderIni();toast('Vuelve la ilustración')};
 function renderAjustes(){
+  renderIA();
   renderObjetivos();
   $('#ppmV').textContent=PPM();$('#ppmM').onclick=()=>setPPM(PPM()-5);$('#ppmP').onclick=()=>setPPM(PPM()+5);
   const pm=ppmMedia();$('#ppmE').textContent=pm?`Calcular con mis ensayos (${pm.ppm} pal/min, media de ${pm.n})`:'Aún no hay ensayos: haz uno en Modo escenario → Ensayo';$('#ppmE').disabled=!pm;$('#ppmE').style.opacity=pm?1:.5;
@@ -1177,6 +1187,92 @@ async function verAnalisis(pid,nuevo){
 async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
 
+/* ============ IA opcional (clave del usuario, solo en este aparato) ============ */
+const IA={key:null,
+ prov:()=>S.cfg.iaProv||'gemini',
+ audio:()=>['gemini','openai'].includes(S.cfg.iaProv||'gemini'),
+ lista:{gemini:{n:'Gemini (Google)',url:'aistudio.google.com/app/apikey',nota:'Suele tener un nivel gratuito con límites.'},claude:{n:'Claude (Anthropic)',url:'console.anthropic.com/settings/keys',nota:'No transcribe audio; sí lee fotos y sugiere etiquetas.'},openai:{n:'ChatGPT (OpenAI)',url:'platform.openai.com/api-keys',nota:'De pago por uso, céntimos al mes.'}},
+ async cargar(){this.key=await IDB.get('iaKey')||null},
+ on(){return !!this.key&&!!S.cfg.iaModelo},
+ async modelos(prov,key){
+  if(prov==='gemini'){const j=await (await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(key))).json();if(j.error)throw new Error(j.error.message);
+    const ok=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/',''));
+    const v=n=>parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/)||[0,0])[1]);
+    const pick=re=>ok.filter(n=>re.test(n)&&!/preview|exp|tts|image|live|audio|embed|thinking/.test(n)).sort((a,b)=>v(b)-v(a))[0];
+    return pick(/^gemini-[\d.]+-flash-lite$/)||pick(/^gemini-[\d.]+-flash$/)||ok.find(n=>/flash/.test(n))||ok[0]}
+  if(prov==='claude'){const r=await fetch('https://api.anthropic.com/v1/models?limit=100',{headers:{'x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}});const j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||'Clave no válida');
+    const ids=(j.data||[]).map(m=>m.id);return ids.find(i=>/haiku/.test(i))||ids.find(i=>/sonnet/.test(i))||ids[0]}
+  if(prov==='openai'){const r=await fetch('https://api.openai.com/v1/models',{headers:{Authorization:'Bearer '+key}});const j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||'Clave no válida');
+    const ids=(j.data||[]).map(m=>m.id).filter(i=>/^gpt-/.test(i)&&/mini/.test(i)&&!/transcribe|tts|audio|realtime|search|image|nano|\d{4}-\d\d-\d\d/.test(i)).sort().reverse();return ids[0]||'gpt-4o-mini'}
+ },
+ async texto(prompt,img){const k=this.key,m=S.cfg.iaModelo,p=this.prov();if(!k)throw new Error('sin clave');
+  const b64=img?img.split(',')[1]:null,mime=img?img.split(';')[0].slice(5):null;
+  if(p==='gemini'){const parts=[{text:prompt}];if(img)parts.push({inline_data:{mime_type:mime,data:b64}});
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(k)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}]})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error?j.error.message:'error');return ((j.candidates||[])[0]?.content?.parts||[]).map(x=>x.text||'').join('').trim()}
+  if(p==='claude'){const content=[];if(img)content.push({type:'image',source:{type:'base64',media_type:mime,data:b64}});content.push({type:'text',text:prompt});
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true','content-type':'application/json'},body:JSON.stringify({model:m,max_tokens:2000,messages:[{role:'user',content}]})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error?j.error.message:'error');return (j.content||[]).map(x=>x.text||'').join('').trim()}
+  if(p==='openai'){const content=[{type:'text',text:prompt}];if(img)content.push({type:'image_url',image_url:{url:img}});
+    const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+k,'Content-Type':'application/json'},body:JSON.stringify({model:m,messages:[{role:'user',content}]})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error?j.error.message:'error');return (j.choices?.[0]?.message?.content||'').trim()}
+ },
+ async transcribir(blob){const k=this.key,p=this.prov();
+  if(p==='openai'){const f=new FormData();f.append('file',new File([blob],'nota.'+(blob.type.includes('mp4')?'mp4':'webm'),{type:blob.type}));f.append('model','gpt-4o-mini-transcribe');f.append('language','es');
+    const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+k},body:f});const j=await r.json();if(!r.ok)throw new Error(j.error?j.error.message:'error');return (j.text||'').trim()}
+  if(p==='gemini'){const d=await blobToData(blob);const mime=(blob.type||'audio/webm').split(';')[0];
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${S.cfg.iaModelo}:generateContent?key=${encodeURIComponent(k)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Transcribe literalmente esta nota de voz en español. Devuelve solo el texto, sin comentarios.'},{inline_data:{mime_type:mime,data:d.split(',')[1]}}]}]})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error?j.error.message:'error');return ((j.candidates||[])[0]?.content?.parts||[]).map(x=>x.text||'').join('').trim()}
+  throw new Error('Este proveedor no transcribe audio')},
+ async leerFoto(img){return this.texto('Transcribe exactamente el texto (manuscrito o impreso) de esta imagen, en español, respetando los saltos de línea. Devuelve solo el texto, sin comentarios. Si no hay texto, devuelve una cadena vacía.',img)},
+ async etiquetas(texto,ya){const usadas=Object.keys(allTags());
+  const r=await this.texto(`Eres el asistente de un cómico. Propón entre 2 y 5 etiquetas temáticas para este texto de comedia. Usa preferentemente etiquetas de esta lista si encajan: ${JSON.stringify(usadas)}. Etiquetas cortas, en minúscula, en español, temas generales (familia, alcohol, trabajo…), nunca frases. No repitas estas: ${JSON.stringify(ya)}. Responde SOLO con un array JSON de cadenas.\n\nTEXTO:\n${texto.slice(0,4000)}`);
+  const m=r.match(/\[[\s\S]*\]/);try{return JSON.parse(m?m[0]:r).map(x=>String(x).toLowerCase().trim()).filter(Boolean).slice(0,6)}catch(e){return []}}
+};
+function renderIA(){const p=IA.prov(),L=IA.lista[p];
+  $('#iaBox').innerHTML=`<div class="s" style="margin-bottom:10px;line-height:1.5">Opcional. Todo funciona sin IA. Si pegas una clave de tu cuenta, la app puede transcribir notas de voz, leer letra difícil en fotos y sugerir etiquetas. La clave <b>solo se guarda en este aparato</b> y nunca pasa por nadie más; el coste (si lo hay) es de tu cuenta.</div>
+   <div class="seg" id="iaP">${Object.entries(IA.lista).map(([k,v])=>`<button data-p="${k}" class="${p===k?'on':''}">${v.n.split(' ')[0]}</button>`).join('')}</div>
+   <div class="s" style="margin:8px 0">Consigue la clave en <b>${L.url}</b>. ${L.nota}</div>
+   <div class="row"><input id="iaK" type="password" placeholder="${IA.key&&S.cfg.iaProv===p?'Clave guardada ••••'+IA.key.slice(-4):'Pega aquí tu clave'}" style="flex:1"><button class="btn sm" id="iaT">Probar</button></div>
+   <div id="iaE" class="s" style="margin-top:8px">${IA.on()&&S.cfg.iaProv===p?`<span style="color:var(--green)">✓ Funciona</span> · modelo ${esc(S.cfg.iaModelo)}`:''}</div>
+   ${IA.on()?`<div class="lbl">Qué hace la IA</div>
+     <div class="trow"><span>Transcribir notas de voz ${IA.audio()?'':'<span class="s">(no con Claude)</span>'}</span><button class="tg ${S.cfg.iaVoz!==false&&IA.audio()?'on':''}" data-f="iaVoz" ${IA.audio()?'':'disabled'}></button></div>
+     <div class="trow"><span>Leer fotos con IA (letra a mano difícil)</span><button class="tg ${S.cfg.iaFoto!==false?'on':''}" data-f="iaFoto"></button></div>
+     <div class="trow"><span>Botón «Sugerir con IA» en las etiquetas</span><button class="tg ${S.cfg.iaTags!==false?'on':''}" data-f="iaTags"></button></div>
+     <button class="btn ghost sm" id="iaX" style="width:100%;margin-top:8px">Quitar la clave de este aparato</button>`:''}`;
+  $$('#iaP button').forEach(b=>b.onclick=()=>{S.cfg.iaProv=b.dataset.p;Store.cfg();renderIA()});
+  $('#iaT').onclick=async()=>{const k=$('#iaK').value.trim()||(S.cfg.iaProv===p?IA.key:null);if(!k)return toast('Pega primero la clave');
+    $('#iaE').textContent='Probando…';try{const m=await IA.modelos(p,k);if(!m)throw new Error('No encuentro un modelo disponible');IA.key=k;await IDB.set('iaKey',k);S.cfg.iaProv=p;S.cfg.iaModelo=m;
+      const r=await IA.texto('Responde solo con la palabra: listo');if(!r)throw new Error('Respuesta vacía');Store.cfg();renderIA();toast('IA conectada')}
+    catch(e){$('#iaE').innerHTML=`<span style="color:#FF8A50">No funciona: ${esc(String(e.message||e).slice(0,140))}</span>`}};
+  $$('#iaBox [data-f]').forEach(b=>b.onclick=()=>{const k=b.dataset.f;S.cfg[k]=S.cfg[k]===false;Store.cfg();renderIA()});
+  if($('#iaX'))$('#iaX').onclick=async()=>{IA.key=null;await IDB.del('iaKey');S.cfg.iaModelo=null;Store.cfg();renderIA();toast('Clave quitada')};
+}
+
+/* ============ notas de voz en la Libreta ============ */
+async function grabarNota(){
+  if(!(navigator.mediaDevices&&window.MediaRecorder))return toast('Este navegador no permite grabar');
+  let stream;try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}catch(e){return toast('Sin permiso para el micrófono')}
+  const mime=pickMime(false),rec=new MediaRecorder(stream,mime?{mimeType:mime,audioBitsPerSecond:48000}:{}),ch=[];rec.ondataavailable=e=>e.data.size&&ch.push(e.data);rec.start(500);
+  const t0=Date.now();let tm;
+  openSheet(`<div class="grab"></div><div style="text-align:center;padding:10px 0"><div class="t" style="font-size:16px">Grabando nota de voz</div>
+    <div id="nvT" style="font-size:44px;font-weight:800;margin:14px 0;color:var(--pink)">0:00</div><div class="s">Cuéntale a la app tu idea. Máximo 5 minutos.</div></div>
+    <div class="row" style="margin-top:14px"><button class="btn ghost" id="nvC" style="flex:1">Cancelar</button><button class="btn" id="nvS" style="flex:2">Parar y guardar</button></div>`);
+  tm=setInterval(()=>{const s=(Date.now()-t0)/1000;$('#nvT')&&($('#nvT').textContent=mmss(s));if(s>=300)$('#nvS').click()},300);
+  const parar=()=>new Promise(r=>{rec.onstop=r;rec.stop()}).then(()=>{clearInterval(tm);stream.getTracks().forEach(t=>t.stop())});
+  $('#nvC').onclick=async()=>{await parar();$('#scrim').onclick=closeSheet;closeSheet()};
+  $('#scrim').onclick=null;
+  $('#nvS').onclick=async()=>{await parar();$('#scrim').onclick=closeSheet;closeSheet();const blob=new Blob(ch,{type:mime||ch[0]?.type||'audio/webm'});
+    const i={id:uid(),texto:$('#qText').value.trim(),etiquetas:qTB.get(),creado:now(),voz:{mime:blob.type,dur:Math.round((Date.now()-t0)/1000)}};
+    await IDB.set('voz:'+i.id,blob);S.ideas[i.id]=i;Store.put('ideas',i);sumaIdea();$('#qText').value='';qTB.set([]);renderLib();toast('Nota de voz guardada');
+    if(IA.on()&&IA.audio()&&S.cfg.iaVoz!==false)transcribirIdea(i.id)};
+}
+async function vozBlob(i){let b=await IDB.get('voz:'+i.id);if(b)return b;if(i.voz&&i.voz.driveId&&Store.hasToken()){try{b=await (await Store.api('files/'+i.voz.driveId+'?alt=media')).blob();await IDB.set('voz:'+i.id,b);return b}catch(e){}}return null}
+async function transcribirIdea(id){const i=S.ideas[id];if(!i)return;const b=await vozBlob(i);if(!b)return toast('No encuentro el audio en este aparato');
+  toast('Transcribiendo…');try{const t=await IA.transcribir(b);if(!t)return toast('No se ha entendido nada en la nota');i.texto=(i.texto?i.texto+'\n':'')+t;i.voz.transcrita=true;Store.put('ideas',i);renderLib();toast('Nota transcrita')}
+  catch(e){toast('No se pudo transcribir: '+String(e.message||e).slice(0,80))}}
+async function hydrateVoz(root){for(const a of root.querySelectorAll('audio[data-voz]')){const i=S.ideas[a.dataset.voz];if(!i||a.src)continue;const b=await vozBlob(i);if(b)a.src=URL.createObjectURL(b);else a.replaceWith(Object.assign(document.createElement('div'),{className:'s',textContent:'Audio en otro aparato (conecta Google para escucharlo)'}))}}
+
 /* ============ etiquetas comunes y sugerencias ============ */
 const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9ñ ]+/g,' ').replace(/\s+/g,' ').trim();
 const STOP=new Set('de la el los las y o a en un una del al con por para que se mi tu su lo le me te es son'.split(' '));
@@ -1237,8 +1333,10 @@ function tagBox(el,inicial,getTexto){
     const c=allTags();const m=Object.keys(c).filter(t=>!tags.includes(t)&&(norm(t).includes(q)||tagSim(t,inp.value))).sort((x,y)=>c[y]-c[x]).slice(0,6);
     a.innerHTML=m.length?'<span class="s">Ya usadas: </span>'+m.map(t=>`<button class="chip" data-a="${esc(t)}">${esc(t)} <span style="opacity:.6">${c[t]}</span></button>`).join(''):'';
     a.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{add(b.dataset.a);inp.value='';auto();inp.focus()})};
-  const sug=()=>{const s=sugerirTags(getTexto?getTexto():'',tags);const box=el.querySelector('.tsug');
-    box.innerHTML=s.length?'<span class="s">Sugeridas por el texto: </span>'+s.map(t=>`<button class="chip" data-s="${esc(t)}" style="border-style:dashed">+ ${esc(t)}</button>`).join(''):'';
+  const sug=()=>{const s=sugerirTags(getTexto?getTexto():'',tags);const box=el.querySelector('.tsug');const iaB=IA.on()&&S.cfg.iaTags!==false&&getTexto&&getTexto().trim().length>20;
+    box.innerHTML=s.length||iaB?'<span class="s">Sugeridas por el texto: </span>'+s.map(t=>`<button class="chip" data-s="${esc(t)}" style="border-style:dashed">+ ${esc(t)}</button>`).join(''):'';
+    if(iaB){box.insertAdjacentHTML('beforeend','<button class="chip" data-ia="1" style="border-color:var(--pink);color:var(--pink)">Sugerir con IA</button>');box.querySelector('[data-ia]').onclick=async e=>{e.target.textContent='Pensando…';try{const r=await IA.etiquetas(getTexto(),tags);if(!r.length)toast('La IA no ha propuesto nada');
+      box.innerHTML='<span class="s">Propuestas de la IA: </span>'+r.filter(t=>!tags.includes(t)).map(t=>`<button class="chip" data-s="${esc(t)}" style="border-color:var(--pink)">+ ${esc(t)}</button>`).join('');box.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{add(b.dataset.s);b.remove()})}catch(err){toast('Error de la IA: '+String(err.message||err).slice(0,80));e.target.textContent='Sugerir con IA'}}}
     box.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>add(b.dataset.s))};
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();add(inp.value);inp.value='';auto()}else if(e.key==='Backspace'&&!inp.value&&tags.length){tags.pop();draw()}});
   inp.addEventListener('input',()=>{if(inp.value.includes(',')){inp.value.split(',').slice(0,-1).forEach(add);inp.value=inp.value.split(',').pop()}auto()});
