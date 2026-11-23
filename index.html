@@ -166,10 +166,10 @@ input:focus,textarea:focus{border-color:var(--pink)}
   <section class="view" id="vEsc">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px 6px"><div id="escRec" style="font-size:15px"></div><button id="escEnd" style="color:#9C95A3;font-size:13px;padding:6px 10px;border:1px solid #2E2A33;border-radius:8px">Terminar</button></div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:0 18px;gap:8px"><div class="s" id="escChiste" style="color:#7d7684"></div>
-      <div style="display:flex;gap:6px;align-items:center"><button id="escRot" style="color:#F5F2F6;font-size:12px;height:30px;padding:0 8px;border:1px solid #2E2A33;border-radius:8px;display:flex;align-items:center;gap:4px"></button><button id="escModo" style="color:#F5F2F6;font-size:12px;padding:6px 10px;border:1px solid #2E2A33;border-radius:8px"></button><button id="escMenos" style="color:#F5F2F6;font-size:13px;width:34px;height:30px;border:1px solid #2E2A33;border-radius:8px">A−</button><button id="escMas" style="color:#F5F2F6;font-size:15px;width:34px;height:30px;border:1px solid #2E2A33;border-radius:8px">A+</button></div></div>
+      <div style="display:flex;gap:6px;align-items:center"><button id="escRot" style="color:#F5F2F6;font-size:12px;height:30px;padding:0 8px;border:1px solid #2E2A33;border-radius:8px;display:flex;align-items:center;gap:4px"></button><button id="escMetro" style="color:#F5F2F6;font-size:12px;height:30px;padding:0 8px;border:1px solid #2E2A33;border-radius:8px;display:none;align-items:center;gap:4px"></button><button id="escModo" style="color:#F5F2F6;font-size:12px;padding:6px 10px;border:1px solid #2E2A33;border-radius:8px"></button><button id="escMenos" style="color:#F5F2F6;font-size:13px;width:34px;height:30px;border:1px solid #2E2A33;border-radius:8px">A−</button><button id="escMas" style="color:#F5F2F6;font-size:15px;width:34px;height:30px;border:1px solid #2E2A33;border-radius:8px">A+</button></div></div>
     <video id="escCam" muted playsinline autoplay style="display:none;position:absolute;right:16px;bottom:118px;width:72px;height:96px;object-fit:cover;border-radius:10px;border:2px solid #FF4D4D;z-index:2;transform:scaleX(-1);background:#111"></video>
     <div id="escBody" style="flex:1;overflow-y:auto;padding:16px 22px 10px;color:#F5F2F6;-webkit-overflow-scrolling:touch"></div>
-    <div style="padding:0 18px 8px"><div style="height:8px;border-radius:5px;background:#221F26;overflow:hidden"><div id="escMeter" style="height:100%;width:0;transition:width .15s"></div></div></div>
+    <div id="escMeterWrap" style="padding:0 18px 8px"><div style="height:8px;border-radius:5px;background:#221F26;overflow:hidden"><div id="escMeter" style="height:100%;width:0;transition:width .15s"></div></div></div>
     <div style="display:grid;grid-template-columns:1fr 2.4fr;gap:10px;padding:8px 16px 26px"><button class="btn ghost" id="escPrev" style="background:#221F26;color:#F5F2F6;border-color:#2E2A33;padding:18px 6px">‹ Anterior</button><button class="btn" id="escNext" style="font-size:17px;padding:18px 6px">Siguiente chiste</button></div>
   </section>
 
@@ -195,6 +195,13 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="row"><button class="btn ghost sm" id="bkCopy" style="flex:1">Copiar copia</button><button class="btn ghost sm" id="bkRestore" style="flex:1">Restaurar…</button></div>
     </div>
     <div class="card">
+      <div class="lbl" style="margin-top:0">Tu velocidad al hablar</div>
+      <div class="s" style="margin-bottom:10px;line-height:1.5">La app calcula cuánto dura cada texto con las palabras por minuto que hablas. Ajústala a mano o calcúlala con tus ensayos del modo escenario.</div>
+      <div class="row" style="justify-content:center;gap:14px"><button class="btn ghost" id="ppmM" style="width:52px">−</button><div style="text-align:center"><div id="ppmV" style="font-size:34px;font-weight:800"></div><div class="s">palabras por minuto</div></div><button class="btn ghost" id="ppmP" style="width:52px">+</button></div>
+      <div class="s" style="text-align:center;margin:8px 0">Lento ~120 · normal ~150 · rápido ~180</div>
+      <button class="btn ghost sm" id="ppmE" style="width:100%"></button>
+    </div>
+    <div class="card">
       <div class="lbl" style="margin-top:0">Etiquetas</div>
       <div class="s" style="margin-bottom:10px;line-height:1.5">Todas tus etiquetas y cuántas veces se usan. Toca una para cambiarle el nombre, unirla con otra parecida o quitarla.</div>
       <div id="tagMgr"></div>
@@ -209,7 +216,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 5.3</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 6</div>
   </section>
 
   <!-- EDITOR -->
@@ -538,7 +545,7 @@ function newTexto(titulo){const t={id:uid(),titulo:titulo||'',estado:'borrador',
 $('#newText').onclick=()=>{const t=newTexto('');Store.put('textos',t);openEditor(t.id,true)};
 $('#mSearch').oninput=renderMesa;$('#mSort').onchange=renderMesa;
 function mesaSort(){const k=$('#mSort').value;const np=id=>pasesDe(id).length;
-  if(k==='nota')return (a,b)=>(notaMedia(b.id)??-1)-(notaMedia(a.id)??-1);if(k==='mas')return (a,b)=>np(b.id)-np(a.id);if(k==='menos')return (a,b)=>np(a.id)-np(b.id);if(k==='dur')return (a,b)=>statsOf(b).min-statsOf(a).min;return (a,b)=>b.editado-a.editado}
+  if(k==='nota')return (a,b)=>(notaMedia(b.id)??-1)-(notaMedia(a.id)??-1);if(k==='mas')return (a,b)=>np(b.id)-np(a.id);if(k==='menos')return (a,b)=>np(a.id)-np(b.id);if(k==='dur')return (a,b)=>minOf(statsOf(b))-minOf(statsOf(a));return (a,b)=>b.editado-a.editado}
 function renderMesa(){
   const f=S.mFilter,q=$('#mSearch').value.trim().toLowerCase();
   $('#mFilters').innerHTML=[['todos','Todos'],...ESTADOS].map(([k,l])=>`<button class="chip ${f===k?'on':''}" data-f="${k}">${l}</button>`).join('');
@@ -548,7 +555,7 @@ function renderMesa(){
     <div class="card" data-id="${t.id}" style="cursor:pointer">
       <div class="row"><div class="t">${esc(t.titulo||'Sin título')}</div>${estChip(t.estado)}</div>
       <div class="s" style="margin:6px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(strip(t.html).slice(0,160))||'Vacío'}</div>
-      <div class="row"><div>${(t.etiquetas||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div><div class="s" style="white-space:nowrap">${t.stats?`${t.stats.remates} rem · ${durTxt(t.stats.min)} · `:''}${fecha(t.editado)}</div></div>
+      <div class="row"><div>${(t.etiquetas||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div><div class="s" style="white-space:nowrap">${t.stats?`${t.stats.remates} rem · ${durTxt(minOf(t.stats))} · `:''}${fecha(t.editado)}</div></div>
       <div class="row" style="margin-top:4px"><span class="s" style="color:var(--amber)">${t.stats&&t.stats.pend?`${t.stats.pend} pendiente${t.stats.pend>1?'s':''}`:''}</span>${notaChip(t.id)}</div>
     </div>`).join(''):`<div class="empty">${q||f!=='todos'?'Nada coincide con la búsqueda.':'Aún no hay textos.<br>Crea uno nuevo o pasa una idea desde la Libreta.'}</div>`;
   $$('#mList .card').forEach(c=>c.onclick=()=>openEditor(c.dataset.id));
@@ -562,7 +569,7 @@ function renderBoard(){
   $('#board').innerHTML=cols.map(([k,l],ci)=>{const ts=Object.values(S.textos).filter(t=>t.estado===k).sort((a,b)=>b.editado-a.editado);
     return `<div class="col"><div class="row" style="margin-bottom:10px">${estChip(k)}<span class="s">${ts.length}</span></div>
     ${ts.map(t=>`<div class="card" style="padding:10px"><div class="t" style="font-size:13.5px;cursor:pointer" data-open="${t.id}">${esc(t.titulo||'Sin título')}</div>
-      <div class="s" style="margin:3px 0 8px">${t.stats?`${t.stats.remates} remates · ${durTxt(t.stats.min)}`:'—'}${t.stats&&t.stats.pend?` · <span style="color:var(--amber)">${t.stats.pend} pend.</span>`:''}${notaMedia(t.id)!=null?` · <b style="color:var(--pink)">★ ${notaMedia(t.id).toFixed(1).replace('.',',')}</b>`:''}</div>
+      <div class="s" style="margin:3px 0 8px">${t.stats?`${t.stats.remates} remates · ${durTxt(minOf(t.stats))}`:'—'}${t.stats&&t.stats.pend?` · <span style="color:var(--amber)">${t.stats.pend} pend.</span>`:''}${notaMedia(t.id)!=null?` · <b style="color:var(--pink)">★ ${notaMedia(t.id).toFixed(1).replace('.',',')}</b>`:''}</div>
       <div class="row"><button class="mv" data-mv="${t.id}" data-d="-1" ${ci===0?'style="visibility:hidden"':''}>‹</button><button class="mv" data-mv="${t.id}" data-d="1" ${ci===cols.length-1?'style="visibility:hidden"':''}>›</button></div></div>`).join('')||'<div class="s" style="padding:10px 4px">Vacío</div>'}</div>`}).join('');
   $$('#board [data-open]').forEach(b=>b.onclick=()=>openEditor(b.dataset.open));
   $$('#board [data-mv]').forEach(b=>b.onclick=()=>{const t=S.textos[b.dataset.mv];const ks=cols.map(c=>c[0]);const i=ks.indexOf(t.estado)+ +b.dataset.d;if(i<0||i>=ks.length)return;t.estado=ks[i];t.editado=now();Store.put('textos',t);renderBoard()});
@@ -570,6 +577,9 @@ function renderBoard(){
 
 /* --- Ajustes --- */
 function renderAjustes(){
+  $('#ppmV').textContent=PPM();$('#ppmM').onclick=()=>setPPM(PPM()-5);$('#ppmP').onclick=()=>setPPM(PPM()+5);
+  const pm=ppmMedia();$('#ppmE').textContent=pm?`Calcular con mis ensayos (${pm.ppm} pal/min, media de ${pm.n})`:'Aún no hay ensayos: haz uno en Modo escenario → Ensayo';$('#ppmE').disabled=!pm;$('#ppmE').style.opacity=pm?1:.5;
+  $('#ppmE').onclick=()=>{if(pm)setPPM(pm.ppm)};
   renderTagManager();
   $$('#upSeg button').forEach(b=>{b.classList.toggle('on',b.dataset.v===(S.cfg.subirGrab||'wifi'));b.onclick=()=>{S.cfg.subirGrab=b.dataset.v;Store.cfg();renderAjustes();Store.syncSoon(500)}});
   $('#styleList').innerHTML=S.cfg.estilos.map(s=>`<button class="row" data-s="${s.id}" style="width:100%;padding:8px 4px;border-bottom:1px solid var(--line)">
@@ -705,7 +715,7 @@ function computeStats(root){root=root||ed;
     prem+=words;run+=words;maxRun=Math.max(maxRun,run);
     frasesP+=(n.textContent.match(/[.!?…»]+(\s|$)/g)||[]).length||0;
   }
-  const min=(prem+rem)/150;
+  const min=(prem+rem)/PPM();
   return {prem,rem,remates,pend,min,rpm:min>0?remates/min:0,maxRun,frasesP,frasesR};
 }
 function updateStats(){if(S.view!=='vEd')return;const s=computeStats();const tot=s.prem+s.rem;
@@ -720,7 +730,7 @@ $('#edStats').onclick=()=>{const s=computeStats();const tot=s.prem+s.rem||1;
   <div class="split" style="margin-bottom:14px"><div style="flex:${s.prem};background:var(--faint)"></div><div style="flex:${s.rem};background:var(--pink)"></div></div>
   ${s.maxRun>=25?`<div class="banner" style="background:rgba(255,181,71,.12);color:var(--amber)">Tramo más largo sin remate: ${s.maxRun} palabras. ¿Se puede recortar o meter un golpe antes?</div>`:''}
   ${s.pend?`<div class="banner" style="background:rgba(255,138,80,.12);color:#FF8A50">Material pendiente en este texto: ${s.pend}</div>`:''}
-  <div class="s" style="line-height:1.5;margin-top:6px">Cuenta como premisa todo el texto hablado que no es remate. El acting, las notas, los títulos y el material pendiente no cuentan. Tiempo calculado a 150 palabras por minuto.</div>`)};
+  <div class="s" style="line-height:1.5;margin-top:6px">Cuenta como premisa todo el texto hablado que no es remate. El acting, las notas, los títulos y el material pendiente no cuentan. Tiempo calculado a ${PPM()} palabras por minuto (cámbialo en Ajustes).</div>`)};
 
 /* ficha del texto */
 $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
@@ -739,12 +749,14 @@ $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
 };
 
 /* ============ setlists y pases ============ */
+const PPM=()=>S.cfg.ppm||150;
+const minOf=st=>st?((st.prem||0)+(st.rem||0))/PPM():0;
 function statsOf(t){if(t.stats)return t.stats;const d=document.createElement('div');d.innerHTML=t.html||'';t.stats=computeStats(d);return t.stats}
 function pasesDe(id){return Object.values(S.pases).filter(p=>p.notas&&p.notas[id]!=null).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))}
 function notaMedia(id){const ps=pasesDe(id);if(!ps.length)return null;return ps.reduce((s,p)=>s+(+p.notas[id]),0)/ps.length}
 function starsTxt(n){if(n==null)return '';const r=Math.round(n);return `<span style="white-space:nowrap"><span style="color:var(--pink);letter-spacing:1px">${'★'.repeat(r)}</span><span style="color:var(--faint);letter-spacing:1px">${'★'.repeat(5-r)}</span></span>`}
 function notaChip(id){const ps=pasesDe(id);if(!ps.length)return '';return `<span class="s" style="white-space:nowrap">${ps.length} pase${ps.length>1?'s':''} · <b style="color:var(--pink)">★ ${notaMedia(id).toFixed(1).replace('.',',')}</b></span>`}
-function setDur(s){return (s.items||[]).reduce((a,id)=>a+(S.textos[id]?statsOf(S.textos[id]).min:0),0)}
+function setDur(s){return (s.items||[]).reduce((a,id)=>a+(S.textos[id]?minOf(statsOf(S.textos[id])):0),0)}
 function hoyISO(){const d=new Date();return d.toISOString().slice(0,10)}
 function fechaCorta(iso){if(!iso)return 'sin fecha';const d=new Date(iso+'T12:00:00');return d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'})}
 function locales(){return [...new Set([...Object.values(S.setlists).map(s=>s.local),...Object.values(S.pases).map(p=>p.local)].filter(Boolean))].sort()}
@@ -755,7 +767,7 @@ function renderSets(){
   const all=Object.values(S.setlists);
   const prox=all.filter(s=>s.estado!=='hecho').sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
   const hechos=all.filter(s=>s.estado==='hecho').sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-  const card=s=>{const d=setDur(s),over=d>s.maxMin;const p=Object.values(S.pases).find(x=>x.setlistId===s.id);
+  const card=s=>{const d=setDur(s),over=d>s.maxMin;const p=Object.values(S.pases).find(x=>x.setlistId===s.id&&x.tipo!=='ensayo');
     const media=p?Object.values(p.notas||{}).reduce((a,b)=>a+ +b,0)/Math.max(1,Object.keys(p.notas||{}).length):null;
     return `<div class="card" data-s="${s.id}" style="cursor:pointer">
      <div class="row"><div class="t">${esc(s.nombre||'Setlist sin nombre')}</div>${s.estado==='hecho'?'<span class="st-chip e-funciona">Hecho</span>':`<span class="st-chip ${over?'e-pruebas':'e-borrador'}">${durTxt(d)} / ${s.maxMin}:00</span>`}</div>
@@ -788,20 +800,21 @@ function openSet(id){S.setOpen=id;go('vSetD')}
 function renderSetD(){
   const s=S.setlists[S.setOpen];if(!s){go('vSet');return}
   const d=setDur(s),pct=Math.min(100,d/s.maxMin*100),over=d>s.maxMin,hecho=s.estado==='hecho';
-  const pase=Object.values(S.pases).find(x=>x.setlistId===s.id);
+  const pase=Object.values(S.pases).find(x=>x.setlistId===s.id&&x.tipo!=='ensayo');
   $('#setD').innerHTML=`
    <div class="top"><button class="ib" id="sdBack"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
      <div style="flex:1;min-width:0;padding:0 6px"><h2 style="font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.nombre||'Setlist sin nombre')}</h2><div class="s">${esc(s.local||'Sin local')} · ${fechaCorta(s.fecha)}</div></div>
      <button class="btn ghost sm" id="sdEdit">Datos</button></div>
    <div class="card"><div class="row" style="margin-bottom:8px"><div class="t" style="font-size:18px">${durTxt(d)} <span class="s">de ${s.maxMin}:00 máx.</span></div><span class="st-chip ${over?'e-pruebas':'e-funciona'}">${over?'Te pasas '+durTxt(d-s.maxMin):'Cabe'}</span></div>
      <div class="split"><div style="width:${pct}%;background:${over?'var(--amber)':'var(--green)'}"></div></div>
-     <div class="s" style="margin-top:6px">Tiempo calculado a 150 palabras por minuto con el texto hablado.</div></div>
-   ${!hecho&&(s.items||[]).length?'<button class="btn" id="sdEsc" style="width:100%;margin-bottom:10px;background:#141216;color:#fff;border:1px solid var(--pink)">▶ Abrir modo escenario</button>':''}
+     <div class="s" style="margin-top:6px">Tiempo calculado a ${PPM()} palabras por minuto con el texto hablado.</div></div>
+   ${(s.items||[]).length?'<button class="btn" id="sdEsc" style="width:100%;margin-bottom:10px;background:#141216;color:#fff;border:1px solid var(--pink)">▶ Abrir modo escenario</button>':''}
    ${pase?`<div class="card"><div class="lbl" style="margin-top:0">Pase puntuado</div><div class="s">${pase.comentario?esc(pase.comentario):'Sin comentario'}</div>${pase.curva||pase.grab?`<button class="btn ghost sm" id="sdAna" style="margin-top:10px">${pase.grab?(pase.grab.tipo==='video'?'Ver vídeo y risas':'Escuchar y ver risas'):'Ver risas del pase'}</button>`:''}</div>`:''}
+   ${(()=>{const ens=Object.values(S.pases).filter(x=>x.setlistId===s.id&&x.tipo==='ensayo').sort((a,b)=>(b.creado||0)-(a.creado||0));return ens.length?`<div class="card"><div class="lbl" style="margin-top:0">Ensayos (${ens.length})</div>${ens.map(e=>`<button class="row" data-ens="${e.id}" style="width:100%;padding:7px 0;border-bottom:1px solid var(--line)"><span style="font-size:13px">${fechaCorta(e.fecha)} · ${mmss(e.duracion||0)}</span><span class="s">${e.ppm?e.ppm+' pal/min':''}${e.grab?' · 🎙':''} ›</span></button>`).join('')}</div>`:''})()}
    <div id="sdItems">${(s.items||[]).map((id,i)=>{const t=S.textos[id];if(!t)return `<div class="card s">Texto borrado <button class="mv" data-x="${i}">✕</button></div>`;const st=statsOf(t);
      return `<div class="card" style="padding:10px 12px"><div class="row">
        <div style="min-width:0;flex:1;cursor:pointer" data-open="${id}"><div class="t" style="font-size:13.5px">${i+1}. ${esc(t.titulo||'Sin título')}</div>
-         <div class="s" style="margin-top:3px">${durTxt(st.min)} · ${estChip(t.estado)} ${pase&&pase.notas&&pase.notas[id]!=null?starsTxt(pase.notas[id]):''}</div></div>
+         <div class="s" style="margin-top:3px">${durTxt(minOf(st))} · ${estChip(t.estado)} ${pase&&pase.notas&&pase.notas[id]!=null?starsTxt(pase.notas[id]):''}</div></div>
        ${hecho?'':`<div style="display:flex;gap:4px"><button class="mv" data-u="${i}" ${i===0?'style="visibility:hidden"':''}>↑</button><button class="mv" data-d="${i}" ${i===s.items.length-1?'style="visibility:hidden"':''}>↓</button><button class="mv" data-x="${i}">✕</button></div>`}
      </div></div>`}).join('')||'<div class="empty" style="padding:20px">Añade textos desde tu material.</div>'}</div>
    ${hecho?'':'<button class="btn ghost" id="sdAdd" style="width:100%;margin-bottom:10px;border-style:dashed">+ Añadir textos</button>'}
@@ -816,9 +829,10 @@ function renderSetD(){
   $$('#setD [data-d]').forEach(b=>b.onclick=()=>mv(+b.dataset.d,+b.dataset.d+1));
   $$('#setD [data-x]').forEach(b=>b.onclick=()=>{s.items.splice(+b.dataset.x,1);saveSet(s);renderSetD()});
   if($('#sdAdd'))$('#sdAdd').onclick=()=>pickTextos(s);
+  $$('#setD [data-ens]').forEach(b=>b.onclick=()=>verEnsayo(b.dataset.ens,false));
   $('#sdPunt').onclick=()=>puntuar(s);if($('#sdEsc'))$('#sdEsc').onclick=()=>prepEscenario(s);if($('#sdAna'))$('#sdAna').onclick=()=>verAnalisis(pase.id,false);
   if($('#sdDup'))$('#sdDup').onclick=()=>{const n=newSet({nombre:s.nombre,local:s.local,maxMin:s.maxMin,items:s.items,fecha:hoyISO()});saveSet(n);openSet(n.id);toast('Setlist copiado para un nuevo pase')};
-  $$('#sdDel').forEach(b=>b.onclick=()=>confirmBox('¿Borrar este setlist'+(pase?' y sus puntuaciones':'')+'?','Borrar',()=>{delete S.setlists[s.id];Store.del('setlists',s.id);if(pase){if(pase.grab){IDB.del('grab:'+pase.id);if(pase.grab.driveId&&Store.hasToken())Store.api('files/'+pase.grab.driveId,{method:'DELETE'}).catch(()=>{})}delete S.pases[pase.id];Store.del('pases',pase.id)}go('vSet')}));
+  $$('#sdDel').forEach(b=>b.onclick=()=>confirmBox('¿Borrar este setlist'+(pase?' y sus puntuaciones':'')+'?','Borrar',()=>{delete S.setlists[s.id];Store.del('setlists',s.id);Object.values(S.pases).filter(x=>x.setlistId===s.id&&x.tipo==='ensayo').forEach(e=>{if(e.grab)IDB.del('grab:'+e.id);delete S.pases[e.id];Store.del('pases',e.id)});if(pase){if(pase.grab){IDB.del('grab:'+pase.id);if(pase.grab.driveId&&Store.hasToken())Store.api('files/'+pase.grab.driveId,{method:'DELETE'}).catch(()=>{})}delete S.pases[pase.id];Store.del('pases',pase.id)}go('vSet')}));
 }
 function pickTextos(s){
   let q='',f='activos';const sel=new Set();
@@ -826,7 +840,7 @@ function pickTextos(s){
      .filter(t=>f==='activos'||t.estado===f).filter(t=>!q||(t.titulo+' '+(t.etiquetas||[]).join(' ')).toLowerCase().includes(q))
      .sort((a,b)=>(notaMedia(b.id)??-1)-(notaMedia(a.id)??-1)||b.editado-a.editado);
     $('#pkL').innerHTML=list.map(t=>`<button class="row card" data-t="${t.id}" style="width:100%;text-align:left;padding:10px 12px;${sel.has(t.id)?'border-color:var(--pink);background:var(--pinkSoft)':''}">
-      <span style="min-width:0"><span class="t" style="font-size:13.5px;display:block">${esc(t.titulo||'Sin título')}</span><span class="s">${durTxt(statsOf(t).min)} · ${ESTL[t.estado]} ${notaMedia(t.id)!=null?'· ★ '+notaMedia(t.id).toFixed(1).replace('.',','):''}</span></span>
+      <span style="min-width:0"><span class="t" style="font-size:13.5px;display:block">${esc(t.titulo||'Sin título')}</span><span class="s">${durTxt(minOf(statsOf(t)))} · ${ESTL[t.estado]} ${notaMedia(t.id)!=null?'· ★ '+notaMedia(t.id).toFixed(1).replace('.',','):''}</span></span>
       <span style="font-size:18px;color:var(--pink)">${sel.has(t.id)?'✓':'+'}</span></button>`).join('')||'<div class="empty" style="padding:20px">No hay más textos con ese filtro.</div>';
     $$('#pkL [data-t]').forEach(b=>b.onclick=()=>{const id=b.dataset.t;sel.has(id)?sel.delete(id):sel.add(id);draw()});
     $('#pkOk').textContent=sel.size?`Añadir ${sel.size}`:'Añadir'};
@@ -838,7 +852,7 @@ function pickTextos(s){
   draw();
 }
 function puntuar(s,sug){
-  let p=Object.values(S.pases).find(x=>x.setlistId===s.id);
+  let p=Object.values(S.pases).find(x=>x.setlistId===s.id&&x.tipo!=='ensayo');
   const notas={...(p?p.notas:{}),...(sug||{})};
   openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:6px"><button class="s" id="puC">Cancelar</button><div class="t">¿Cómo fue cada chiste?</div><button class="s" style="color:var(--pink);font-weight:800" id="puS">Guardar</button></div>
    <div class="s" style="margin-bottom:12px">${esc(s.local||'Sin local')} · ${fechaCorta(s.fecha)}. Toca las estrellas: 1 no funcionó, 5 funcionó muy bien.${sug?' Vienen rellenas con la sugerencia del detector de risas: corrígelas a tu gusto.':''}</div>
@@ -863,18 +877,23 @@ function pickMime(video){const c=video?['video/webm;codecs=vp8,opus','video/webm
 function prepEscenario(s){
   if(!(s.items||[]).filter(id=>S.textos[id]).length)return toast('Añade textos al setlist primero');
   const puede=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder);
-  let tipo=S.cfg.grabTipo||'audio';if(!puede)tipo='nada';
+  let tipo=S.cfg.grabTipo||'audio';if(!puede)tipo='nada';const hecho=s.estado==='hecho';let modo=hecho?'ensayo':(S.cfg.escModoUso||'actuacion');
   openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:4px">Modo escenario</div>
-   <div class="s" style="margin-bottom:14px;line-height:1.5">La pantalla se queda en negro con el setlist en grande y no se apaga. Pulsa <b>Siguiente</b> cada vez que empieces un chiste: así la app sabe qué risas son de cada uno.</div>
-   <div class="lbl">Grabar el pase</div>
+   <div class="s" style="margin-bottom:12px;line-height:1.5">Pantalla en negro con el setlist en grande, sin que se apague. Pulsa <b>Siguiente</b> al empezar cada chiste: así la app mide cuánto dura cada uno.</div>
+   <div class="lbl">¿Para qué es?</div>
+   <div class="seg" id="gM"><button data-m="ensayo" class="${modo==='ensayo'?'on':''}">Ensayo</button><button data-m="actuacion" class="${modo==='actuacion'?'on':''}" ${hecho?'disabled style="opacity:.4"':''}>Actuación</button></div>${hecho?'<div class="s" style="margin-top:6px">Este setlist ya tiene su actuación puntuada. Para actuar otra vez, usa «Repetir este setlist».</div>':''}
+   <div class="s" id="gMi" style="margin:8px 0 4px;line-height:1.5"></div>
+   <div class="lbl">Grabar</div>
    <div class="seg" id="gT">${[['nada','No grabar'],['audio','Solo audio'],['video','Vídeo']].map(([k,l])=>`<button data-k="${k}" class="${tipo===k?'on':''}" ${!puede&&k!=='nada'?'disabled':''}>${l}</button>`).join('')}</div>
-   <div class="s" style="margin:8px 0 14px;line-height:1.5">${puede?'El audio ocupa poco (unos 5 MB cada 10 minutos). El vídeo usa la cámara delantera y ocupa bastante más. Con grabación se activa el <b>detector de risas</b>: deja el móvil cerca, apuntando al público si puedes.':'Este navegador no permite grabar: el modo escenario funcionará sin grabación.'}</div>
-   <button class="btn" id="gGo" style="width:100%">Empezar</button>`);
+   <div class="s" style="margin:8px 0 14px;line-height:1.5">${puede?'El audio ocupa poco (unos 5 MB cada 10 minutos). El vídeo usa la cámara delantera y ocupa bastante más.':'Este navegador no permite grabar: funcionará sin grabación.'}</div>
+   <button class="btn" id="gGo" style="width:100%">Continuar</button>`);
+  const info=()=>{$('#gMi').innerHTML=modo==='ensayo'?'Mide el tiempo real de cada texto y tu velocidad al hablar. Sin detector de risas. Puedes activar el <b>metrónomo</b>.':'Para pases con público: con grabación se activa el <b>detector de risas</b> y al terminar puntúas cada chiste.'};info();
+  $$('#gM button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;$$('#gM button').forEach(x=>x.classList.toggle('on',x===b));info()});
   $$('#gT button').forEach(b=>b.onclick=()=>{tipo=b.dataset.k;$$('#gT button').forEach(x=>x.classList.toggle('on',x===b))});
-  $('#gGo').onclick=async()=>{S.cfg.grabTipo=tipo;closeSheet();await startEscenario(s,tipo)};
+  $('#gGo').onclick=async()=>{S.cfg.grabTipo=tipo;S.cfg.escModoUso=modo;Store.cfg();closeSheet();await startEscenario(s,tipo,modo)};
 }
-async function startEscenario(s,tipo){
-  Object.assign(ESC,{s,i:0,marks:[],chunks:[],L:[],F:[],tipo,stream:null,rec:null,mime:'',live:0,started:false,counting:false,an:null,ctx:null});
+async function startEscenario(s,tipo,modo){
+  Object.assign(ESC,{modo:modo||'actuacion',metro:false,s,i:0,marks:[],chunks:[],L:[],F:[],tipo,stream:null,rec:null,mime:'',live:0,started:false,counting:false,an:null,ctx:null});
   try{await document.documentElement.requestFullscreen?.()}catch(e){}
   try{ESC.wake=await navigator.wakeLock?.request('screen')}catch(e){}
   if(S.cfg.escLock!==false)await lockRot(true,true);
@@ -884,10 +903,11 @@ async function startEscenario(s,tipo){
       ESC.mime=pickMime(tipo==='video');
       ESC.rec=new MediaRecorder(ESC.stream,ESC.mime?{mimeType:ESC.mime,audioBitsPerSecond:64000,videoBitsPerSecond:900000}:{});
       ESC.rec.ondataavailable=e=>{if(e.data&&e.data.size)ESC.chunks.push(e.data)};
-      const AC=window.AudioContext||window.webkitAudioContext;ESC.ctx=new AC();
-      const src=ESC.ctx.createMediaStreamSource(ESC.stream);ESC.an=ESC.ctx.createAnalyser();ESC.an.fftSize=2048;src.connect(ESC.an);
+      if(ESC.modo==='actuacion'){const AC=window.AudioContext||window.webkitAudioContext;ESC.ctx=new AC();
+      const src=ESC.ctx.createMediaStreamSource(ESC.stream);ESC.an=ESC.ctx.createAnalyser();ESC.an.fftSize=2048;src.connect(ESC.an)}
     }catch(e){toast('Sin permiso para grabar: sigo sin grabación');ESC.tipo='nada';ESC.stream=null}
   }
+  $('#escMeterWrap').style.display=ESC.an?'block':'none';$('#escMetro').style.display=ESC.modo==='ensayo'?'flex':'none';drawMetro();
   const cam=$('#escCam');if(ESC.tipo==='video'&&ESC.stream){cam.srcObject=ESC.stream;cam.style.display='block';cam.play().catch(()=>{})}else cam.style.display='none';
   ESC.t0=performance.now();ESC.marks=[0];
   go('vEsc');renderEsc();escEstado();
@@ -937,6 +957,25 @@ async function lockRot(on,silencioso){
 function drawRot(){const b=$('#escRot');if(!b)return;b.innerHTML=(ESC.rotLock?'<svg width="14" height="14" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2"/></svg>Giro':'<svg width="14" height="14" viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Giro');
   b.style.borderColor=ESC.rotLock?'#FF3E8E':'#2E2A33';b.title=ESC.rotLock?'Giro bloqueado: toca para liberar':'Giro libre: toca para bloquear'}
 $('#escRot').onclick=async()=>{const on=!ESC.rotLock;S.cfg.escLock=on;Store.cfg();await lockRot(on);toast(ESC.rotLock?'Giro de pantalla bloqueado':'Giro de pantalla libre')};
+/* metrónomo (solo ensayo) */
+const MET={ctx:null,t:null,next:0,beat:0};
+function metroTick(){const c=MET.ctx,bpm=S.cfg.bpm||60;while(MET.next<c.currentTime+0.12){const o=c.createOscillator(),g=c.createGain();o.frequency.value=MET.beat%4===0?1500:1000;
+    g.gain.setValueAtTime(0.0001,MET.next);g.gain.exponentialRampToValueAtTime(0.5,MET.next+0.002);g.gain.exponentialRampToValueAtTime(0.0001,MET.next+0.05);o.connect(g).connect(c.destination);o.start(MET.next);o.stop(MET.next+0.06);
+    const cuando=(MET.next-c.currentTime)*1000;setTimeout(()=>{const b=$('#escMetro');if(b){b.style.background='#FF3E8E';setTimeout(()=>b.style.background='none',90)}},Math.max(0,cuando));
+    MET.next+=60/bpm;MET.beat++}}
+function metroOn(on){ESC.metro=on;if(on){const AC=window.AudioContext||window.webkitAudioContext;MET.ctx=MET.ctx||new AC();MET.ctx.resume();MET.next=MET.ctx.currentTime+0.05;MET.beat=0;clearInterval(MET.t);MET.t=setInterval(metroTick,25)}else{clearInterval(MET.t)}drawMetro()}
+function drawMetro(){const b=$('#escMetro');if(!b)return;b.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24"><path d="M9 3h6l4 18H5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 15l5-8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>${ESC.metro?(S.cfg.bpm||60):'Metro'}`;b.style.borderColor=ESC.metro?'#FF3E8E':'#2E2A33'}
+$('#escMetro').onclick=()=>{const bpm=S.cfg.bpm||60;
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:10px">Metrónomo</div>
+   <div class="trow"><span>Activado</span><button class="tg ${ESC.metro?'on':''}" id="mtOn"></button></div>
+   <div class="row" style="justify-content:center;gap:14px;margin:14px 0"><button class="btn ghost" id="mtM" style="width:56px">−</button><div style="text-align:center"><div id="mtV" style="font-size:40px;font-weight:800">${bpm}</div><div class="s">golpes por minuto</div></div><button class="btn ghost" id="mtP" style="width:56px">+</button></div>
+   <div id="mtQ" style="text-align:center">${[50,60,80,100,120].map(v=>`<button class="chip" data-v="${v}">${v}</button>`).join('')}</div>
+   <div class="s" style="margin-top:10px;line-height:1.5">Para ensayar ritmo y pausas. Si grabas, el clic también se oye en la grabación.</div>`);
+  const set=v=>{S.cfg.bpm=Math.max(30,Math.min(220,v));$('#mtV').textContent=S.cfg.bpm;Store.cfg();drawMetro()};
+  $('#mtOn').onclick=()=>{metroOn(!ESC.metro);$('#mtOn').classList.toggle('on',ESC.metro)};
+  $('#mtM').onclick=()=>set((S.cfg.bpm||60)-5);$('#mtP').onclick=()=>set((S.cfg.bpm||60)+5);
+  $$('#mtQ [data-v]').forEach(b=>b.onclick=()=>set(+b.dataset.v));
+};
 $('#escModo').onclick=()=>{S.cfg.escModo=(S.cfg.escModo||'guion')==='guion'?'remates':'guion';Store.cfg();renderEsc()};
 $('#escMas').onclick=()=>{S.cfg.escTam=Math.min(44,(S.cfg.escTam||22)+3);Store.cfg();renderEsc()};
 $('#escMenos').onclick=()=>{S.cfg.escTam=Math.max(14,(S.cfg.escTam||22)-3);Store.cfg();renderEsc()};
@@ -956,7 +995,7 @@ function cuentaAtras(){if(ESC.counting||ESC.started)return;ESC.counting=true;
   let n=3;const paso=()=>{if(n===0){o.remove();ESC.counting=false;ESC.started=true;ESC.t0=performance.now();ESC.marks=[0];ESC.L=[];ESC.F=[];ESC.chunks=[];
       try{ESC.rec&&ESC.rec.start(1000)}catch(e){}escEstado();tickEsc();return}
     o.textContent=n;o.animate([{transform:'scale(1.4)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:350,easing:'ease-out'});n--;setTimeout(paso,1000)};paso()}
-function cancelEscenario(){clearInterval(ESC.timer);document.removeEventListener('visibilitychange',escVis);
+function cancelEscenario(){metroOn(false);clearInterval(ESC.timer);document.removeEventListener('visibilitychange',escVis);
   try{ESC.wake&&ESC.wake.release()}catch(e){}try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}ESC.rotLock=false;try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}
   $('#escCam').srcObject=null;$('#escCam').style.display='none';ESC.stream&&ESC.stream.getTracks().forEach(t=>t.stop());try{ESC.ctx&&ESC.ctx.close()}catch(e){}
   S.setOpen=ESC.s.id;go('vSetD')}
@@ -964,7 +1003,7 @@ $('#escNext').onclick=()=>{if(!ESC.started)return cuentaAtras();const ids=escIte
 $('#escPrev').onclick=()=>{if(!ESC.started){if(!ESC.counting)cancelEscenario();return}if(ESC.i>0){ESC.i--;ESC.marks.pop();renderEsc()}};
 $('#escEnd').onclick=()=>{if(!ESC.started)return cuentaAtras();confirmBox('¿Terminar el pase?','Terminar',endEscenario)};
 async function endEscenario(){
-  clearInterval(ESC.timer);document.removeEventListener('visibilitychange',escVis);
+  metroOn(false);clearInterval(ESC.timer);document.removeEventListener('visibilitychange',escVis);
   const total=elapsed();
   try{ESC.wake&&ESC.wake.release()}catch(e){}try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}ESC.rotLock=false;try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}
   let blob=null;
@@ -972,17 +1011,41 @@ async function endEscenario(){
   $('#escCam').srcObject=null;$('#escCam').style.display='none';
   ESC.stream&&ESC.stream.getTracks().forEach(t=>t.stop());try{ESC.ctx&&ESC.ctx.close()}catch(e){}
   const s=ESC.s,ids=escItems().slice(0,ESC.i+1);
-  let p=Object.values(S.pases).find(x=>x.setlistId===s.id);
-  if(!p){p={id:uid(),setlistId:s.id,creado:now(),notas:{}};S.pases[p.id]=p}
+  let p=ESC.modo==='ensayo'?null:Object.values(S.pases).find(x=>x.setlistId===s.id&&x.tipo!=='ensayo');
+  if(!p){p={id:uid(),setlistId:s.id,creado:now(),notas:{}};if(ESC.modo==='ensayo'){p.tipo='ensayo';p.fecha=hoyISO()}S.pases[p.id]=p}
   const seg={};ids.forEach((id,k)=>{seg[id]=[Math.round(ESC.marks[k]*10)/10,Math.round((k+1<ESC.marks.length?ESC.marks[k+1]:total)*10)/10]});
-  Object.assign(p,{fecha:s.fecha,local:s.local,segmentos:seg,duracion:Math.round(total),editado:now()});
+  Object.assign(p,{fecha:p.tipo==='ensayo'?hoyISO():s.fecha,local:p.tipo==='ensayo'?'':s.local,segmentos:seg,duracion:Math.round(total),editado:now()});
+  if(p.tipo==='ensayo')p.ppm=ppmDe(p);
   if(ESC.L.length)p.curva={hz:5,L:ESC.L,F:ESC.F,sens:S.cfg.sensRisa||4};
   if(blob&&blob.size){await IDB.set('grab:'+p.id,blob);p.grab={tipo:ESC.tipo,mime:blob.type,size:blob.size,local:true}}
   Store.put('pases',p);
   S.setOpen=s.id;go('vSetD');
-  if(p.curva)verAnalisis(p.id,true);else puntuar(s);
+  if(p.tipo==='ensayo')verEnsayo(p.id,true);else if(p.curva)verAnalisis(p.id,true);else puntuar(s);
 }
 
+/* --- ensayos y velocidad de habla --- */
+function palabras(t){const st=statsOf(t);return (st.prem||0)+(st.rem||0)}
+function ppmDe(p){let w=0,sec=0;Object.entries(p.segmentos||{}).forEach(([id,[a,b]])=>{const t=S.textos[id];if(!t||b-a<5)return;const n=palabras(t);if(!n)return;w+=n;sec+=b-a});return sec>0?Math.round(w/(sec/60)):null}
+function ppmMedia(){const ens=Object.values(S.pases).filter(p=>p.tipo==='ensayo'&&p.ppm);if(!ens.length)return null;const r=ens.sort((a,b)=>(b.editado||0)-(a.editado||0)).slice(0,10);return {ppm:Math.round(r.reduce((s,p)=>s+p.ppm,0)/r.length),n:r.length}}
+function setPPM(v){S.cfg.ppm=Math.max(80,Math.min(260,Math.round(v)));Store.cfg();renderAll();toast('Velocidad: '+S.cfg.ppm+' palabras por minuto')}
+async function verEnsayo(pid,nuevo){
+  const p=S.pases[pid];if(!p)return;const blob=p.grab?await getGrab(p):null;
+  const filas=Object.entries(p.segmentos||{}).map(([id,[a,b]])=>{const t=S.textos[id];const est=t?minOf(statsOf(t))*60:0,real=b-a,dif=real-est;const ppm=t&&real>=5?Math.round(palabras(t)/(real/60)):null;
+    return `<div class="card" style="padding:10px 12px;cursor:pointer" data-go="${a}"><div class="row"><div class="t" style="font-size:13.5px">${esc(t?t.titulo||'Sin título':'Texto borrado')}</div><b style="white-space:nowrap">${mmss(real)}</b></div>
+      <div class="s" style="margin-top:3px">la app estimaba ${mmss(est)} · <span style="color:${Math.abs(dif)<10?'var(--green)':'var(--amber)'}">${dif>=0?'+':'−'}${mmss(Math.abs(dif))}</span>${ppm?` · ${ppm} pal/min`:''}</div></div>`}).join('');
+  openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:8px"><button class="s" id="veC">Cerrar</button><div class="t">Ensayo · ${fechaCorta(p.fecha)}</div><span style="width:40px"></span></div>
+   ${blob?(p.grab.tipo==='video'?`<video id="veM" src="${URL.createObjectURL(blob)}" controls playsinline style="width:100%;border-radius:10px;margin-bottom:10px;background:#000"></video>`:`<audio id="veM" src="${URL.createObjectURL(blob)}" controls style="width:100%;margin-bottom:10px"></audio>`):''}
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div class="stat"><b>${mmss(p.duracion||0)}</b><span class="s">tiempo total</span></div><div class="stat"><b>${p.ppm||'—'}</b><span class="s">palabras por minuto</span></div></div>
+   ${p.ppm&&p.ppm!==PPM()?`<div class="banner">Hoy has hablado a <b>${p.ppm}</b> palabras por minuto y la app calcula con <b>${PPM()}</b>. <button class="chip on" id="veU" style="margin:6px 0 0">Usar ${p.ppm} para calcular tiempos</button></div>`:''}
+   ${filas}
+   ${p.grab?'<button class="btn ghost sm" id="veDG" style="width:100%;margin-top:6px">Borrar la grabación</button>':''}
+   <button class="btn ghost sm" id="veD" style="width:100%;margin-top:8px">Borrar este ensayo</button>`);
+  $('#veC').onclick=closeSheet;
+  if($('#veU'))$('#veU').onclick=()=>{setPPM(p.ppm);closeSheet()};
+  $$('#sheet [data-go]').forEach(c=>c.onclick=()=>{const m=$('#veM');if(m){m.currentTime=+c.dataset.go;m.play()}});
+  if($('#veDG'))$('#veDG').onclick=()=>confirmBox('¿Borrar la grabación de este ensayo?','Borrar',async()=>{await IDB.del('grab:'+p.id);if(p.grab.driveId)Store.tomb['drv:'+p.grab.driveId]=now();delete p.grab;p.editado=now();Store.put('pases',p);renderSetD()});
+  $('#veD').onclick=()=>confirmBox('¿Borrar este ensayo?','Borrar',async()=>{if(p.grab){await IDB.del('grab:'+p.id);if(p.grab.driveId)Store.tomb['drv:'+p.grab.driveId]=now()}delete S.pases[p.id];Store.del('pases',p.id);renderSetD()});
+}
 /* --- detector de risas (aproximado) --- */
 function detectarRisas(c,sens){
   const L=c.L,F=c.F,hz=c.hz||5,n=L.length;if(!n)return [];
@@ -1034,7 +1097,7 @@ async function verAnalisis(pid,nuevo){
   const draw=()=>{if(!p.curva)return;const m=$('#vaM');drawCurva($('#vaCv'),p,sens,m?m.currentTime:null);
     const {res}=resumenRisas(p,sens);
     $('#vaL').innerHTML=Object.entries(p.segmentos||{}).map(([id,[a]])=>{const r=res[id],t=S.textos[id];return `<div class="card" style="padding:10px 12px;cursor:pointer" data-go="${a}"><div class="row"><div class="t" style="font-size:13.5px">${esc(t?t.titulo||'Sin título':'Texto borrado')}</div>${starsTxt(r.sug)}</div>
-      <div class="s" style="margin-top:3px">${mmss(r.dur)} en escena · ${r.n} risa${r.n===1?'':'s'} · ${Math.round(r.seg)} s de risa${t?' · estimado '+durTxt(statsOf(t).min):''}</div></div>`}).join('');
+      <div class="s" style="margin-top:3px">${mmss(r.dur)} en escena · ${r.n} risa${r.n===1?'':'s'} · ${Math.round(r.seg)} s de risa${t?' · estimado '+durTxt(minOf(statsOf(t))):''}</div></div>`}).join('');
     $$('#vaL [data-go]').forEach(c=>c.onclick=()=>{const m=$('#vaM');if(m){m.currentTime=+c.dataset.go;m.play()}});};
   draw();
   if($('#vaS'))$('#vaS').oninput=()=>{sens=+$('#vaS').value;draw()};
