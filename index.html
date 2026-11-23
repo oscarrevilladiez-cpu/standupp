@@ -262,7 +262,7 @@ const S={textos:{},ideas:{},fotos:{},cfg:{tema:'dark',estilos:DEF_STYLES.map(s=>
  view:'vLib',editing:null,mFilter:'todos',libTag:'',synced:false};
 
 /* ============ almacenamiento: en el aparato (IndexedDB) + Google Drive ============ */
-const CLIENT_ID='PENDIENTE.apps.googleusercontent.com'; // se rellena al crear el permiso en Google Cloud
+const CLIENT_ID='846543321318-h2lnhs8p6lv21k2v8mfno42qglan481c.apps.googleusercontent.com'; // se rellena al crear el permiso en Google Cloud
 const SCOPE='https://www.googleapis.com/auth/drive.file';
 const IDB={db:null,
  open(){return new Promise(res=>{try{const r=indexedDB.open('standupp',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{this.db=r.result;res(true)};r.onerror=()=>res(false)}catch(e){res(false)}})},
