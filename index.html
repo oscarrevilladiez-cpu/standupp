@@ -209,7 +209,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 5.2</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 5.3</div>
   </section>
 
   <!-- EDITOR -->
@@ -874,7 +874,7 @@ function prepEscenario(s){
   $('#gGo').onclick=async()=>{S.cfg.grabTipo=tipo;closeSheet();await startEscenario(s,tipo)};
 }
 async function startEscenario(s,tipo){
-  Object.assign(ESC,{s,i:0,marks:[],chunks:[],L:[],F:[],tipo,stream:null,rec:null,mime:'',live:0});
+  Object.assign(ESC,{s,i:0,marks:[],chunks:[],L:[],F:[],tipo,stream:null,rec:null,mime:'',live:0,started:false,counting:false,an:null,ctx:null});
   try{await document.documentElement.requestFullscreen?.()}catch(e){}
   try{ESC.wake=await navigator.wakeLock?.request('screen')}catch(e){}
   if(S.cfg.escLock!==false)await lockRot(true,true);
@@ -883,21 +883,21 @@ async function startEscenario(s,tipo){
       ESC.stream=await navigator.mediaDevices.getUserMedia(tipo==='video'?{audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false},video:{facingMode:'user',width:{ideal:640},height:{ideal:360}}}:{audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
       ESC.mime=pickMime(tipo==='video');
       ESC.rec=new MediaRecorder(ESC.stream,ESC.mime?{mimeType:ESC.mime,audioBitsPerSecond:64000,videoBitsPerSecond:900000}:{});
-      ESC.rec.ondataavailable=e=>{if(e.data&&e.data.size)ESC.chunks.push(e.data)};ESC.rec.start(1000);
+      ESC.rec.ondataavailable=e=>{if(e.data&&e.data.size)ESC.chunks.push(e.data)};
       const AC=window.AudioContext||window.webkitAudioContext;ESC.ctx=new AC();
       const src=ESC.ctx.createMediaStreamSource(ESC.stream);ESC.an=ESC.ctx.createAnalyser();ESC.an.fftSize=2048;src.connect(ESC.an);
     }catch(e){toast('Sin permiso para grabar: sigo sin grabación');ESC.tipo='nada';ESC.stream=null}
   }
   const cam=$('#escCam');if(ESC.tipo==='video'&&ESC.stream){cam.srcObject=ESC.stream;cam.style.display='block';cam.play().catch(()=>{})}else cam.style.display='none';
   ESC.t0=performance.now();ESC.marks=[0];
-  go('vEsc');renderEsc();
+  go('vEsc');renderEsc();escEstado();
   const buf=ESC.an?new Float32Array(ESC.an.fftSize):null,fb=ESC.an?new Float32Array(ESC.an.frequencyBinCount):null;
   ESC.timer=setInterval(()=>{
     if(ESC.an){ESC.an.getFloatTimeDomainData(buf);let s2=0;for(let k=0;k<buf.length;k++)s2+=buf[k]*buf[k];
       const db=Math.max(-90,10*Math.log10(s2/buf.length+1e-12));
       ESC.an.getFloatFrequencyData(fb);const hz=ESC.ctx.sampleRate/2/fb.length;const a=Math.floor(300/hz),b=Math.floor(6000/hz);let lg=0,ar=0,n=0;
       for(let k=a;k<b;k++){const p=Math.pow(10,fb[k]/10)+1e-12;lg+=Math.log(p);ar+=p;n++}
-      const flat=n?Math.exp(lg/n)/(ar/n):0;ESC.L.push(Math.round(db*10)/10);ESC.F.push(Math.round(flat*1000)/1000);ESC.live=db}
+      const flat=n?Math.exp(lg/n)/(ar/n):0;if(ESC.started){ESC.L.push(Math.round(db*10)/10);ESC.F.push(Math.round(flat*1000)/1000)}ESC.live=db}
     tickEsc();
   },200);
   document.addEventListener('visibilitychange',escVis);
@@ -924,8 +924,7 @@ function renderEsc(){
   $('#escBody').scrollTop=0;
   $('#escModo').textContent=modo==='guion'?'Remates':'Guion';
   drawRot();
-  $('#escNext').textContent=nx?'Siguiente chiste':'Terminar el pase';
-  $('#escPrev').style.visibility=ESC.i>0?'visible':'hidden';
+  if(ESC.started){$('#escNext').textContent=nx?'Siguiente chiste':'Terminar el pase';$('#escPrev').style.visibility=ESC.i>0?'visible':'hidden'}
   tickEsc();
 }
 async function lockRot(on,silencioso){
@@ -942,15 +941,28 @@ $('#escModo').onclick=()=>{S.cfg.escModo=(S.cfg.escModo||'guion')==='guion'?'rem
 $('#escMas').onclick=()=>{S.cfg.escTam=Math.min(44,(S.cfg.escTam||22)+3);Store.cfg();renderEsc()};
 $('#escMenos').onclick=()=>{S.cfg.escTam=Math.max(14,(S.cfg.escTam||22)-3);Store.cfg();renderEsc()};
 function tickEsc(){
-  const e=elapsed(),max=ESC.s.maxMin*60;
-  $('#escRec').innerHTML=`${ESC.tipo!=='nada'?'<span style="width:11px;height:11px;border-radius:50%;background:#FF4D4D;display:inline-block;box-shadow:0 0 0 4px rgba(255,77,77,.2);margin-right:8px"></span>REC ':''}<b>${mmss(e)}</b> <span style="color:#7d7684">/ ${ESC.s.maxMin}:00</span>`;
+  const e=ESC.started?elapsed():0,max=ESC.s.maxMin*60;
+  $('#escRec').innerHTML=`${ESC.tipo!=='nada'&&ESC.started?'<span style="width:11px;height:11px;border-radius:50%;background:#FF4D4D;display:inline-block;box-shadow:0 0 0 4px rgba(255,77,77,.2);margin-right:8px"></span>REC ':''}<b>${mmss(e)}</b> <span style="color:#7d7684">/ ${ESC.s.maxMin}:00</span>`;
   $('#escRec').style.color=e>max?'#FFB547':'#F5F2F6';
-  const cur=e-ESC.marks[ESC.marks.length-1];$('#escChiste').textContent='este chiste '+mmss(cur);
+  const cur=e-ESC.marks[ESC.marks.length-1];$('#escChiste').textContent=ESC.started?'este chiste '+mmss(cur):(ESC.tipo!=='nada'?'Listo para grabar':'Listo');
   if(ESC.an){const v=Math.max(0,Math.min(1,(ESC.live+60)/50));$('#escMeter').style.width=(v*100)+'%';$('#escMeter').style.background=v>.7?'#FF3E8E':'#4a4450'}
 }
-$('#escNext').onclick=()=>{const ids=escItems();if(ESC.i<ids.length-1){ESC.i++;ESC.marks.push(elapsed());renderEsc()}else endEscenario()};
-$('#escPrev').onclick=()=>{if(ESC.i>0){ESC.i--;ESC.marks.pop();renderEsc()}};
-$('#escEnd').onclick=()=>confirmBox('¿Terminar el pase?','Terminar',endEscenario);
+function escEstado(){const on=ESC.started;
+  $('#escBody').style.opacity=on?1:.4;$('#escBody').style.transition='opacity .4s';
+  const e=$('#escEnd');e.textContent=on?'Terminar':'Empezar';e.style.background=on?'none':'#FF3E8E';e.style.color=on?'#9C95A3':'#fff';e.style.borderColor=on?'#2E2A33':'#FF3E8E';e.style.fontWeight=on?'400':'800';
+  if(!on){$('#escNext').textContent='Empezar';$('#escPrev').textContent='Salir';$('#escPrev').style.visibility='visible'}else{$('#escPrev').textContent='‹ Anterior';renderEsc()}}
+function cuentaAtras(){if(ESC.counting||ESC.started)return;ESC.counting=true;
+  const o=document.createElement('div');o.id='escCount';o.style.cssText='position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);font-size:min(46vw,260px);font-weight:800;color:#FF3E8E;font-family:Inter,sans-serif';document.body.appendChild(o);
+  let n=3;const paso=()=>{if(n===0){o.remove();ESC.counting=false;ESC.started=true;ESC.t0=performance.now();ESC.marks=[0];ESC.L=[];ESC.F=[];ESC.chunks=[];
+      try{ESC.rec&&ESC.rec.start(1000)}catch(e){}escEstado();tickEsc();return}
+    o.textContent=n;o.animate([{transform:'scale(1.4)',opacity:0},{transform:'scale(1)',opacity:1}],{duration:350,easing:'ease-out'});n--;setTimeout(paso,1000)};paso()}
+function cancelEscenario(){clearInterval(ESC.timer);document.removeEventListener('visibilitychange',escVis);
+  try{ESC.wake&&ESC.wake.release()}catch(e){}try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}ESC.rotLock=false;try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}
+  $('#escCam').srcObject=null;$('#escCam').style.display='none';ESC.stream&&ESC.stream.getTracks().forEach(t=>t.stop());try{ESC.ctx&&ESC.ctx.close()}catch(e){}
+  S.setOpen=ESC.s.id;go('vSetD')}
+$('#escNext').onclick=()=>{if(!ESC.started)return cuentaAtras();const ids=escItems();if(ESC.i<ids.length-1){ESC.i++;ESC.marks.push(elapsed());renderEsc()}else endEscenario()};
+$('#escPrev').onclick=()=>{if(!ESC.started){if(!ESC.counting)cancelEscenario();return}if(ESC.i>0){ESC.i--;ESC.marks.pop();renderEsc()}};
+$('#escEnd').onclick=()=>{if(!ESC.started)return cuentaAtras();confirmBox('¿Terminar el pase?','Terminar',endEscenario)};
 async function endEscenario(){
   clearInterval(ESC.timer);document.removeEventListener('visibilitychange',escVis);
   const total=elapsed();
