@@ -126,8 +126,9 @@ input:focus,textarea:focus{border-color:var(--pink)}
     <div id="modeBanner"></div>
     <div class="quick">
       <textarea id="qText" placeholder="Apunta una idea…"></textarea>
+      <div id="qTagBox"></div>
       <div class="row">
-        <input id="qTags" placeholder="Etiquetas (separadas por comas)" style="flex:1">
+        <span style="flex:1"></span>
         <button class="btn ghost sm" id="qPhoto" title="Foto"><svg width="18" height="18" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="12" cy="13" r="3.5" stroke="currentColor" stroke-width="2" fill="none"/></svg></button>
         <button class="btn sm" id="qSave">Guardar</button>
       </div>
@@ -192,6 +193,11 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="row"><button class="btn ghost sm" id="bkCopy" style="flex:1">Copiar copia</button><button class="btn ghost sm" id="bkRestore" style="flex:1">Restaurar…</button></div>
     </div>
     <div class="card">
+      <div class="lbl" style="margin-top:0">Etiquetas</div>
+      <div class="s" style="margin-bottom:10px;line-height:1.5">Todas tus etiquetas y cuántas veces se usan. Toca una para cambiarle el nombre, unirla con otra parecida o quitarla.</div>
+      <div id="tagMgr"></div>
+    </div>
+    <div class="card">
       <div class="lbl" style="margin-top:0">Grabaciones de los pases</div>
       <div class="s" style="margin-bottom:10px;line-height:1.5">Se guardan en este aparato. ¿Cuándo subirlas a tu Drive (carpeta Grabaciones)?</div>
       <div class="seg" id="upSeg"><button data-v="wifi">Solo con wifi</button><button data-v="siempre">Siempre</button><button data-v="nunca">No subir</button></div>
@@ -201,7 +207,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 4</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 5</div>
   </section>
 
   <!-- EDITOR -->
@@ -493,15 +499,17 @@ function ideaAction(id,a){
 }
 function editIdea(i){
   openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:12px"><button class="s" id="xC">Cancelar</button><div class="t">Editar idea</div><button class="s" style="color:var(--pink);font-weight:800" id="xS">Guardar</button></div>
-   <textarea id="xT" style="min-height:120px">${esc(i.texto||'')}</textarea><div class="lbl">Etiquetas</div><input id="xG" value="${esc((i.etiquetas||[]).join(', '))}">`);
-  $('#xC').onclick=closeSheet;$('#xS').onclick=()=>{i.texto=$('#xT').value.trim();i.etiquetas=tagsOf($('#xG').value);Store.put('ideas',i);closeSheet();renderLib()};
+   <textarea id="xT" style="min-height:120px">${esc(i.texto||'')}</textarea><div class="lbl">Etiquetas</div><div id="xG"></div>`);
+  const tb=tagBox($('#xG'),i.etiquetas,()=>$('#xT').value);$('#xT').oninput=()=>tb.refresh();
+  $('#xC').onclick=closeSheet;$('#xS').onclick=()=>{i.texto=$('#xT').value.trim();i.etiquetas=tb.get();Store.put('ideas',i);closeSheet();renderLib()};
 }
+let qTB;setTimeout(()=>{qTB=tagBox($('#qTagBox'),[],()=>$('#qText').value);let qt;$('#qText').addEventListener('input',()=>{clearTimeout(qt);qt=setTimeout(()=>qTB.refresh(),500)})},0);
 $('#qSave').onclick=async()=>{
   const txt=$('#qText').value.trim();if(!txt&&!qFoto)return toast('Escribe algo o añade una foto');
-  const i={id:uid(),texto:txt,etiquetas:tagsOf($('#qTags').value),creado:now()};
+  const i={id:uid(),texto:txt,etiquetas:qTB.get(),creado:now()};
   if(qFoto){i.fotoId='f'+i.id;await Store.putFoto(i.fotoId,qFoto)}
   S.ideas[i.id]=i;Store.put('ideas',i);
-  $('#qText').value='';$('#qTags').value='';qFoto=null;$('#qPrev').innerHTML='';renderLib();toast('Idea guardada');
+  $('#qText').value='';qTB.set([]);qFoto=null;$('#qPrev').innerHTML='';renderLib();toast('Idea guardada');
 };
 $('#qPhoto').onclick=()=>$('#qFile').click();
 $('#qOcr').onclick=()=>{if(!Store.hasToken())return toast(Store.meta.conectado?'Pulsa arriba para reconectar con Google':'Conecta tu Google Drive en Ajustes para leer fotos');$('#qOcrFile').click()};
@@ -551,6 +559,7 @@ function renderBoard(){
 
 /* --- Ajustes --- */
 function renderAjustes(){
+  renderTagManager();
   $$('#upSeg button').forEach(b=>{b.classList.toggle('on',b.dataset.v===(S.cfg.subirGrab||'wifi'));b.onclick=()=>{S.cfg.subirGrab=b.dataset.v;Store.cfg();renderAjustes();Store.syncSoon(500)}});
   $('#styleList').innerHTML=S.cfg.estilos.map(s=>`<button class="row" data-s="${s.id}" style="width:100%;padding:8px 4px;border-bottom:1px solid var(--line)">
     <span style="display:flex;align-items:center;gap:10px"><span class="sb" style="background:${soft(s.color,.15)};color:${forTheme(s.color)};height:30px;min-width:30px">${icoHTML(s.icono)}</span><span style="font-size:14px">${esc(s.nombre)}</span>${s.fijo?'<span class="s">fijo</span>':''}</span>
@@ -575,7 +584,7 @@ try{document.execCommand('defaultParagraphSeparator',false,'p')}catch(e){}
 function openEditor(id,focusTitle){
   const t=S.textos[id];if(!t)return;S.backTo=S.view==='vEd'?S.backTo:S.view;S.editing=id;
   t._lastTitle=t.titulo;$('#edTitle').value=t.titulo||'';ed.innerHTML=t.html||'<p><br></p>';
-  hydrateImgs(ed);go('vEd');renderStyleBar();renderFmtBar();updateStats();
+  hydrateImgs(ed);go('vEd');hReset();renderStyleBar();renderFmtBar();updateStats();
   $('#edWrap').scrollTop=0;
   setTimeout(()=>{if(focusTitle)$('#edTitle').focus()},60);
 }
@@ -587,7 +596,7 @@ ed.addEventListener('input',e=>{
   if(!ed.firstChild||ed.firstChild.nodeType===3){const p=document.createElement('p');while(ed.firstChild)p.appendChild(ed.firstChild);if(!p.firstChild)p.innerHTML='<br>';ed.appendChild(p);placeCaretEnd(p)}
   if(e.inputType==='insertParagraph'){const b=curBlock();if(b&&b.dataset.st&&!b.textContent.trim())delete b.dataset.st;
     b&&b.querySelectorAll('span[data-st]').forEach(s=>{if(!s.textContent.replace(/​/g,'').trim())s.replaceWith(...s.childNodes)})}
-  scheduleSave();
+  scheduleSave();hSoon();hBtns();
 });
 ed.addEventListener('paste',e=>{e.preventDefault();const txt=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,txt)});
 document.addEventListener('selectionchange',()=>{const s=getSelection();if(s.rangeCount&&ed.contains(s.anchorNode)){savedRange=s.getRangeAt(0).cloneRange();markActive()}});
@@ -611,7 +620,7 @@ function placeCaretEnd(el){const r=document.createRange();r.selectNodeContents(e
 function placeAfter(node){const z=document.createTextNode('​');node.after(z);const r=document.createRange();r.setStart(z,1);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r)}
 
 function applyStyle(id){
-  restoreSel();const st=styleById(id);const s=getSelection();if(!s.rangeCount)return;const r=s.getRangeAt(0);
+  restoreSel();if(H.t)hPush();const st=styleById(id);const s=getSelection();if(!s.rangeCount)return;const r=s.getRangeAt(0);
   if(!ed.contains(r.commonAncestorContainer))return;
   const anc=r.commonAncestorContainer.nodeType===1?r.commonAncestorContainer:r.commonAncestorContainer.parentNode;
   const inSpan=anc.closest&&anc.closest(`span[data-st="${id}"]`);
@@ -628,7 +637,7 @@ function applyStyle(id){
   const sp=document.createElement('span');sp.dataset.st=id;sp.appendChild(frag);r.insertNode(sp);
   placeAfter(sp);
   done();
-  function done(){scheduleSave();markActive();updateStats()}
+  function done(){hPush();scheduleSave();markActive();updateStats()}
 }
 function markActive(){const s=getSelection();if(!s.rangeCount)return;const n=s.anchorNode;const el=n&&(n.nodeType===1?n:n.parentNode);const act=new Set();
   let x=el;while(x&&x!==ed){if(x.dataset&&x.dataset.st)act.add(x.dataset.st);x=x.parentNode}
@@ -641,6 +650,8 @@ function renderStyleBar(){
   $('#sbNew').onmousedown=e=>e.preventDefault();$('#sbNew').onclick=()=>editStyle(null);
 }
 const FMT=[
+ ['undo','<svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 9h10a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',()=>hGo(-1),1],
+ ['redo','<svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 9H10a6 6 0 0 0 0 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',()=>hGo(1),1],
  ['b','<b>B</b>',()=>document.execCommand('bold')],
  ['i','<i style="font-family:serif;font-size:16px">I</i>',()=>document.execCommand('italic')],
  ['u','<u>U</u>',()=>document.execCommand('underline')],
@@ -651,16 +662,16 @@ const FMT=[
  ['in','<svg viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 9l3 3-3 3" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>',()=>indent(1)],
  ['out','<svg viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M7 9l-3 3 3 3" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>',()=>indent(-1)],
  ['img','<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 16l5-5 4 4 3-3 6 6" stroke="currentColor" stroke-width="2" fill="none"/></svg>',()=>$('#edFile').click()],
- ['undo','<svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M4 9h10a6 6 0 0 1 0 12h-3" fill="none" stroke="currentColor" stroke-width="2"/></svg>',()=>document.execCommand('undo')]
 ];
-function renderFmtBar(){$('#fmtBar').innerHTML=FMT.map(([k,h])=>`<button class="fb" data-f="${k}">${h}</button>`).join('');
-  $$('#fmtBar .fb').forEach(b=>{b.onmousedown=e=>e.preventDefault();b.onclick=()=>{restoreSel();FMT.find(f=>f[0]===b.dataset.f)[2]();scheduleSave()}})}
+function renderFmtBar(){$('#fmtBar').innerHTML=FMT.map(([k,h],i)=>`<button class="fb" data-f="${k}" title="${{undo:'Deshacer',redo:'Rehacer'}[k]||''}">${h}</button>${i===1?'<span class="vsep"></span>':''}`).join('');
+  $$('#fmtBar .fb').forEach(b=>{b.onmousedown=e=>e.preventDefault();b.onclick=()=>{const f=FMT.find(f=>f[0]===b.dataset.f);if(f[3]){f[2]();return}restoreSel();if(H.t)hPush();f[2]();hPush();scheduleSave()}});hBtns()}
 function selBlocks(){const s=getSelection();return s.rangeCount?blocksInRange(s.getRangeAt(0)):[]}
 function cycleAlign(){const bs=selBlocks();const cur=bs[0]&&bs[0].style.textAlign||'left';const nx={left:'center',center:'right',right:'left'}[cur]||'left';bs.forEach(b=>b.style.textAlign=nx==='left'?'':nx);toast('Alineación: '+{left:'izquierda',center:'centrada',right:'derecha'}[nx])}
 function cycleLH(){const bs=selBlocks();const cur=parseFloat(bs[0]&&bs[0].style.lineHeight)||1.6;const nx=cur<1.5?1.6:cur<1.9?2:cur<2.4?2.5:1.2;bs.forEach(b=>b.style.lineHeight=nx===1.6?'':nx);toast('Interlineado: '+String(nx).replace('.',','))}
 function indent(d){selBlocks().forEach(b=>{const cur=parseFloat(b.style.marginLeft)||0;const nx=Math.max(0,Math.min(6,cur+d*1.5));b.style.marginLeft=nx?nx+'em':''})}
-$('#edFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const d=await shrink(f);const id='f'+uid();await Store.putFoto(id,d);restoreSel();document.execCommand('insertHTML',false,`<p><img data-foto="${id}" src="${d}"></p><p><br></p>`);e.target.value='';scheduleSave()};
-document.addEventListener('keydown',e=>{if(S.view!=='vEd'||!(e.ctrlKey||e.metaKey))return;const n=parseInt(e.key);if(n>=1&&n<=9){const ss=S.cfg.estilos.filter(s=>s.enBarra);if(ss[n-1]){e.preventDefault();applyStyle(ss[n-1].id)}}});
+$('#edFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const d=await shrink(f);const id='f'+uid();await Store.putFoto(id,d);restoreSel();if(H.t)hPush();document.execCommand('insertHTML',false,`<p><img data-foto="${id}" src="${d}"></p><p><br></p>`);e.target.value='';hPush();scheduleSave()};
+document.addEventListener('keydown',e=>{if(S.view!=='vEd'||!(e.ctrlKey||e.metaKey))return;
+  if(document.activeElement===ed&&(e.key==='z'||e.key==='Z'||e.key==='y')){e.preventDefault();hGo(e.key==='y'||e.shiftKey?1:-1);return}const n=parseInt(e.key);if(n>=1&&n<=9){const ss=S.cfg.estilos.filter(s=>s.enBarra);if(ss[n-1]){e.preventDefault();applyStyle(ss[n-1].id)}}});
 
 /* barras pegadas al teclado */
 function placeBars(){const vv=window.visualViewport;if(!vv)return;const off=window.innerHeight-(vv.height+vv.offsetTop);$('#bars').style.bottom=Math.max(0,off)+'px'}
@@ -705,13 +716,14 @@ $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
   openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:6px">Ficha del texto</div>
   <div class="lbl">Estado</div><div id="fE">${ESTADOS.map(([k,l])=>`<button class="chip ${t.estado===k?'on':''}" data-e="${k}">${l}</button>`).join('')}</div>
   <div class="lbl">Categoría</div><div id="fC">${CATS.map(c=>`<button class="chip ${t.categoria===c?'on':''}" data-c="${c}">${c}</button>`).join('')}</div>
-  <div class="lbl">Etiquetas</div><input id="fT" value="${esc((t.etiquetas||[]).join(', '))}" placeholder="familia, tecnología…">
+  <div class="lbl">Etiquetas</div><div id="fT"></div>
   <div class="lbl">Pases de este texto</div>${pasesDe(t.id).map(p=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:13px">${esc(p.local||'Sin local')} <span class="s">· ${fechaCorta(p.fecha)}</span></span>${starsTxt(p.notas[t.id])}</div>`).join('')||'<div class="s">Aún no se ha probado en ningún pase.</div>'}
   <div class="s" style="margin-top:14px">Creado ${fecha(t.creado)} · editado ${fecha(t.editado)}</div>
   <div class="row" style="margin-top:16px"><button class="btn ghost" id="fDel" style="flex:1">Borrar texto</button><button class="btn" id="fOk" style="flex:1">Hecho</button></div>`);
+  const ftb=tagBox($('#fT'),t.etiquetas,()=>(t.titulo||'')+' '+strip(t.html));
   $$('#fE .chip').forEach(c=>c.onclick=()=>{t.estado=c.dataset.e;$$('#fE .chip').forEach(x=>x.classList.toggle('on',x===c))});
   $$('#fC .chip').forEach(c=>c.onclick=()=>{t.categoria=c.dataset.c;$$('#fC .chip').forEach(x=>x.classList.toggle('on',x===c))});
-  $('#fOk').onclick=()=>{t.etiquetas=tagsOf($('#fT').value);t.editado=now();Store.put('textos',t);closeSheet()};
+  $('#fOk').onclick=()=>{t.etiquetas=ftb.get();t.editado=now();Store.put('textos',t);closeSheet()};
   $('#fDel').onclick=()=>confirmBox('¿Borrar «'+(t.titulo||'Sin título')+'»? No se puede deshacer.','Borrar',()=>{delete S.textos[t.id];Store.del('textos',t.id);Object.values(S.ideas).forEach(i=>{if(i.pasada===t.id){delete i.pasada;Store.put('ideas',i)}});S.editing=null;go('vMesa')});
 };
 
@@ -980,6 +992,106 @@ async function verAnalisis(pid,nuevo){
 }
 async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
+
+/* ============ etiquetas comunes y sugerencias ============ */
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9ñ ]+/g,' ').replace(/\s+/g,' ').trim();
+const STOP=new Set('de la el los las y o a en un una del al con por para que se mi tu su lo le me te es son'.split(' '));
+const stem=w=>{w=norm(w);if(w.length>5&&/(es)$/.test(w)&&!/[aeiou]es$/.test(w))w=w.slice(0,-2);else if(w.length>3&&w.endsWith('s'))w=w.slice(0,-1);if(w.length>5&&/[ao]$/.test(w))w=w.slice(0,-1);return w};
+const stems=s=>norm(s).split(' ').filter(w=>w&&!STOP.has(w)).map(stem).filter(w=>w.length>=3);
+function tagSim(a,b){const na=norm(a),nb=norm(b);if(!na||!nb)return 0;if(na===nb)return 2;const A=stems(a),B=stems(b);
+  if(A.join(' ')===B.join(' '))return 2;
+  for(const x of A)for(const y of B){if(x===y)return 1;if(x.length>=5&&y.length>=5&&(x.startsWith(y)||y.startsWith(x)))return 1}return 0}
+function allTags(){const c={};[...Object.values(S.textos),...Object.values(S.ideas)].forEach(o=>(o.etiquetas||[]).forEach(t=>{c[t]=(c[t]||0)+1}));return c}
+const TEMAS={
+ 'familia':'madre padre hijo hija hermano hermana abuelo abuela suegra suegro tio tia primo prima familia cuñado cuñada sobrino mama papa nieto',
+ 'pareja':'novia novio pareja marido mujer esposa esposo boda casarse divorcio cita ligar tinder beso amor ex',
+ 'alcohol':'cerveza vino copa copas borracho borrachera resaca alcohol cubata chupito whisky ginebra kalimotxo botellon',
+ 'bares':'bar bares camarero barra tapa tapas terraza caña pub discoteca',
+ 'comida':'comida comer cena cenar comer restaurante cocina cocinar dieta hambre bocadillo pizza paella croqueta postre',
+ 'tecnología':'movil telefono app aplicacion internet ordenador gps whatsapp redes instagram tiktok wifi email correo contraseña bluetooth inteligencia',
+ 'trabajo':'trabajo jefe jefa oficina empresa reunion sueldo nomina compañero curro paro entrevista contrato teletrabajo',
+ 'salud':'medico medica hospital farmacia enfermo enfermedad dolor pastilla receta urgencias dentista operacion vacuna',
+ 'deporte':'gimnasio gym deporte futbol correr running bici bicicleta partido entrenar pesas yoga padel',
+ 'viajes':'viaje viajar avion aeropuerto hotel vacaciones playa maleta tren turista crucero',
+ 'infancia':'colegio niño niña infancia profesor profesora recreo deberes examen instituto clase',
+ 'pueblo':'pueblo campo aldea fiestas verbena vecino vecina plaza tractor',
+ 'dinero':'dinero banco hipoteca alquiler factura precio caro barato tarjeta ahorro',
+ 'animales':'perro gato mascota animal veterinario pajaro',
+ 'coche':'coche carnet autoescuela conducir aparcar gasolina atasco multa',
+ 'casa':'casa piso hogar limpiar lavadora cocina baño mudanza ikea muebles',
+ 'edad':'viejo vieja mayor jubilado jubilada cumpleaños edad joven treintañero cuarenta cincuenta',
+ 'televisión':'tele television serie netflix programa anuncio presentador'
+};
+const TEMAS_ST=Object.fromEntries(Object.entries(TEMAS).map(([k,v])=>[k,new Set(v.split(' ').map(stem))]));
+function sugerirTags(texto,ya){
+  const toks=new Set(stems(texto)),usadas=allTags(),out={},ya2=ya.map(norm);
+  const pon=(t,p)=>{if(ya2.includes(norm(t))||ya.some(x=>tagSim(x,t)))return;out[t]=(out[t]||0)+p};
+  Object.keys(usadas).forEach(t=>{const ts=stems(t);if(ts.length&&ts.every(x=>[...toks].some(y=>y===x||(x.length>=5&&y.startsWith(x)))))pon(t,3+Math.min(3,usadas[t]))});
+  Object.entries(TEMAS_ST).forEach(([tema,set])=>{const n=[...toks].filter(x=>set.has(x)).length;if(!n)return;
+    const propia=Object.keys(usadas).find(u=>tagSim(u,tema));pon(propia||tema,n*2+(propia?2:0))});
+  return Object.entries(out).sort((a,b)=>b[1]-a[1]).slice(0,6).map(x=>x[0]);
+}
+/* caja de etiquetas: chips + autocompletar + avisos de parecidas */
+function tagBox(el,inicial,getTexto){
+  let tags=[...(inicial||[])];
+  el.innerHTML=`<div class="tbox" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px">
+    <span class="tchips" style="display:contents"></span><input class="tin" placeholder="Añadir etiqueta…" style="flex:1;min-width:120px;border:0;background:none;padding:4px"></div>
+    <div class="s" style="margin:6px 2px 0">Escribe una etiqueta y pulsa <b>coma</b> o <b>Intro</b> para añadirla. Usa las mismas siempre que puedas: así podrás filtrar bien.</div>
+    <div class="tauto" style="margin-top:6px"></div><div class="tsug" style="margin-top:6px"></div>`;
+  const inp=el.querySelector('.tin');
+  const draw=()=>{el.querySelector('.tchips').innerHTML=tags.map((t,i)=>`<span class="chip on" style="margin:0">${esc(t)}<button data-x="${i}" style="margin-left:4px;color:inherit">✕</button></span>`).join('');
+    el.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{tags.splice(+b.dataset.x,1);draw()});sug();auto()};
+  const add=raw=>{let t=String(raw).trim().replace(/\s+/g,' ').toLowerCase();if(!t)return;
+    const exist=Object.keys(allTags());const igual=exist.find(e=>tagSim(e,t)===2);if(igual)t=igual;
+    if(tags.some(x=>norm(x)===norm(t)))return;
+    const parecida=!igual&&exist.find(e=>tagSim(e,t)===1&&!tags.includes(e));
+    tags.push(t);draw();
+    if(parecida){const a=el.querySelector('.tauto');a.innerHTML=`<div class="banner" style="margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">Ya usas «${esc(parecida)}», que se parece a «${esc(t)}». <button class="chip on" data-rep="1" style="margin:0">Usar «${esc(parecida)}»</button><button class="chip" data-keep="1" style="margin:0">Dejar las dos</button></div>`;
+      a.querySelector('[data-rep]').onclick=()=>{tags=tags.map(x=>x===t?parecida:x);tags=[...new Set(tags)];draw()};a.querySelector('[data-keep]').onclick=()=>{a.innerHTML=''}}
+  };
+  const auto=()=>{const q=norm(inp.value);const a=el.querySelector('.tauto');if(!q){if(!a.querySelector('[data-rep]'))a.innerHTML='';return}
+    const c=allTags();const m=Object.keys(c).filter(t=>!tags.includes(t)&&(norm(t).includes(q)||tagSim(t,inp.value))).sort((x,y)=>c[y]-c[x]).slice(0,6);
+    a.innerHTML=m.length?'<span class="s">Ya usadas: </span>'+m.map(t=>`<button class="chip" data-a="${esc(t)}">${esc(t)} <span style="opacity:.6">${c[t]}</span></button>`).join(''):'';
+    a.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{add(b.dataset.a);inp.value='';auto();inp.focus()})};
+  const sug=()=>{const s=sugerirTags(getTexto?getTexto():'',tags);const box=el.querySelector('.tsug');
+    box.innerHTML=s.length?'<span class="s">Sugeridas por el texto: </span>'+s.map(t=>`<button class="chip" data-s="${esc(t)}" style="border-style:dashed">+ ${esc(t)}</button>`).join(''):'';
+    box.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>add(b.dataset.s))};
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===','){e.preventDefault();add(inp.value);inp.value='';auto()}else if(e.key==='Backspace'&&!inp.value&&tags.length){tags.pop();draw()}});
+  inp.addEventListener('input',()=>{if(inp.value.includes(',')){inp.value.split(',').slice(0,-1).forEach(add);inp.value=inp.value.split(',').pop()}auto()});
+  inp.addEventListener('blur',()=>{setTimeout(()=>{if(inp.value.trim()){add(inp.value);inp.value=''}},150)});
+  draw();
+  return {get:()=>{if(inp.value.trim()){add(inp.value);inp.value=''}return [...tags]},set:v=>{tags=[...v];draw()},refresh:sug};
+}
+/* gestor de etiquetas en Ajustes */
+function renderTagManager(){
+  const c=allTags(),ks=Object.keys(c).sort((a,b)=>c[b]-c[a]||a.localeCompare(b));
+  $('#tagMgr').innerHTML=ks.length?ks.map(t=>{const par=ks.filter(o=>o!==t&&tagSim(o,t));return `<button class="chip" data-t="${esc(t)}" style="${par.length?'border-color:var(--amber)':''}">${esc(t)} <span style="opacity:.6">${c[t]}</span></button>`}).join('')
+    +(ks.some(t=>ks.some(o=>o!==t&&tagSim(o,t)))?'<div class="s" style="margin-top:6px;color:var(--amber)">Las etiquetas con borde naranja se parecen a otra: tócalas para unirlas.</div>':'')
+    :'<div class="s">Aún no hay etiquetas.</div>';
+  $$('#tagMgr [data-t]').forEach(b=>b.onclick=()=>editTag(b.dataset.t));
+}
+function editTag(t){
+  const c=allTags(),par=Object.keys(c).filter(o=>o!==t&&tagSim(o,t));
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:4px">Etiqueta «${esc(t)}»</div><div class="s" style="margin-bottom:12px">Se usa en ${c[t]} elemento${c[t]>1?'s':''}.</div>
+   ${par.length?`<div class="lbl">Unir con una parecida</div>${par.map(o=>`<button class="chip" data-m="${esc(o)}">Pasar todo a «${esc(o)}» (${c[o]})</button>`).join('')}`:''}
+   <div class="lbl">Cambiar el nombre (o escribe otra existente para unirlas)</div><input id="tgN" value="${esc(t)}">
+   <div class="row" style="margin-top:14px"><button class="btn ghost" id="tgD" style="flex:1">Quitar de todo</button><button class="btn" id="tgS" style="flex:1">Guardar</button></div>`);
+  const aplicar=nuevo=>{let n=0;['textos','ideas'].forEach(col=>Object.values(S[col]).forEach(o=>{if(!(o.etiquetas||[]).includes(t))return;
+      o.etiquetas=[...new Set(o.etiquetas.map(x=>x===t?nuevo:x).filter(Boolean))];if(col==='textos')o.editado=now();Store.put(col,o);n++}));
+    closeSheet();renderAll();toast(nuevo?`«${t}» → «${nuevo}» en ${n} elementos`:`Quitada de ${n} elementos`)};
+  $$('#sheet [data-m]').forEach(b=>b.onclick=()=>aplicar(b.dataset.m));
+  $('#tgS').onclick=()=>{const v=$('#tgN').value.trim().toLowerCase();if(!v||v===t)return closeSheet();aplicar(Object.keys(c).find(o=>norm(o)===norm(v))||v)};
+  $('#tgD').onclick=()=>confirmBox(`¿Quitar «${t}» de todos los textos e ideas?`,'Quitar',()=>aplicar(null));
+}
+/* ============ deshacer / rehacer del editor ============ */
+const H={st:[],i:-1,t:null};
+function caretOff(){const s=getSelection();if(!s.rangeCount||!ed.contains(s.anchorNode))return null;const r=document.createRange();r.selectNodeContents(ed);r.setEnd(s.anchorNode,s.anchorOffset);return r.toString().length}
+function setCaretOff(n){if(n==null)return;const w=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT);let t,acc=0;while(t=w.nextNode()){if(acc+t.length>=n){const r=document.createRange();r.setStart(t,n-acc);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r);return}acc+=t.length}placeCaretEnd(ed)}
+function hReset(){H.st=[{h:ed.innerHTML,c:null}];H.i=0;clearTimeout(H.t);hBtns()}
+function hPush(){clearTimeout(H.t);H.t=null;const h=ed.innerHTML;if(H.st[H.i]&&H.st[H.i].h===h)return;H.st=H.st.slice(0,H.i+1);H.st.push({h,c:caretOff()});if(H.st.length>150)H.st.shift();H.i=H.st.length-1;hBtns()}
+function hSoon(){clearTimeout(H.t);H.t=setTimeout(hPush,600)}
+function hGo(d){if(H.t)hPush();const j=H.i+d;if(j<0||j>=H.st.length)return;H.i=j;ed.innerHTML=H.st[j].h;hydrateImgs(ed);ed.focus({preventScroll:true});setCaretOff(H.st[j].c);scheduleSave();updateStats();hBtns()}
+function hBtns(){const u=$('#fmtBar [data-f="undo"]'),r=$('#fmtBar [data-f="redo"]');if(u)u.style.opacity=H.i>0||H.t?1:.35;if(r)r.style.opacity=H.i<H.st.length-1?1:.35}
 
 /* ============ editor de estilos ============ */
 function editStyle(id){
