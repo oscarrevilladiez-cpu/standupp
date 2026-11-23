@@ -42,6 +42,10 @@ input:focus,textarea:focus{border-color:var(--pink)}
 .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
 .btn.sm{padding:7px 12px;font-size:12.5px;border-radius:10px}
 .card .t{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+#splash{position:fixed;inset:0;z-index:100;background:#000;display:flex;align-items:center;justify-content:center;transition:opacity .45s}
+#iniBand{height:15vh;min-height:84px;margin:0 -16px;overflow:hidden;background:#120a0b}
+#printArea{display:none}
+@media print{body{overflow:visible;background:#fff!important}#app,.nav,.fab,.bars,.sheet,.scrim,.toast,#splash{display:none!important}#printArea{display:block;color:#000;font-family:Inter,Arial,sans-serif;padding:10mm}}
 .empty{text-align:center;color:var(--mute);font-size:13.5px;padding:40px 20px;line-height:1.6}
 .banner{background:var(--pinkSoft);color:var(--pink);font-size:12px;padding:8px 12px;border-radius:10px;margin-bottom:10px;line-height:1.4}
 .st-chip{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:700}
@@ -111,6 +115,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
 .split{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--panel2)}
 @media(min-width:900px){
   .view{padding:0 32px 120px;max-width:980px;margin:0 auto;width:100%}
+  #iniBand{margin:0 -32px}
   .col{flex:1 1 0;max-width:none}
   .edwrap{padding:30px 40px 160px}
 }
@@ -121,7 +126,13 @@ input:focus,textarea:focus{border-color:var(--pink)}
 <div id="app">
 
   <!-- LIBRETA -->
-  <section class="view on" id="vLib">
+  <section class="view on" id="vIni" style="padding-top:0">
+    <div id="iniBand"></div>
+    <div class="row" style="padding:14px 0 4px"><div id="iniLogo" style="min-width:0"></div><button class="ib" id="iniAj" aria-label="Ajustes" style="color:var(--mute)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+    <div id="iniBody"></div>
+  </section>
+
+  <section class="view" id="vLib">
     <div class="top"><h2>Libreta</h2><div class="sync" id="sync1"></div></div>
     <div id="modeBanner"></div>
     <div class="quick">
@@ -143,7 +154,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
 
   <!-- MESA -->
   <section class="view" id="vMesa">
-    <div class="top"><h2>Mesa</h2><button class="btn sm" id="newText">+ Nuevo texto</button></div>
+    <div class="top"><h2>Mesa</h2><div style="display:flex;gap:8px;align-items:center"><div class="seg" style="width:auto"><button class="on" style="padding:6px 10px">Lista</button><button data-goto="vTab" style="padding:6px 10px">Columnas</button></div><button class="btn sm" id="newText">+ Nuevo</button></div></div>
     <input id="mSearch" placeholder="Buscar en títulos, textos y etiquetas…" style="margin-bottom:10px">
     <div id="mFilters" style="margin-bottom:8px"></div>
     <div class="row" style="margin-bottom:10px"><span class="s">Ordenar</span><select id="mSort" style="width:auto;padding:6px 10px;font-size:12.5px"><option value="rec">Más reciente</option><option value="nota">Mejor nota</option><option value="mas">Más probado</option><option value="menos">Menos probado</option><option value="dur">Más largo</option></select></div>
@@ -152,7 +163,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
 
   <!-- TABLERO -->
   <section class="view" id="vTab">
-    <div class="top"><h2>Tablero</h2><div class="s">Mueve con ‹ ›</div></div>
+    <div class="top"><h2>Mesa</h2><div class="seg" style="width:auto"><button data-goto="vMesa" style="padding:6px 10px">Lista</button><button class="on" style="padding:6px 10px">Columnas</button></div></div><div class="s" style="margin:-4px 0 10px">Mueve cada texto de estado con ‹ ›</div>
     <div class="board" id="board"></div>
   </section>
 
@@ -162,6 +173,13 @@ input:focus,textarea:focus{border-color:var(--pink)}
     <div id="setList"></div>
   </section>
   <section class="view" id="vSetD"><div id="setD"></div></section>
+
+  <!-- ESCENARIO -->
+  <section class="view" id="vSes">
+    <div class="top"><h2>Escenario</h2><button class="btn sm" id="newSes">+ Nueva sesión</button></div>
+    <div id="sesFil"></div>
+    <div id="sesList"></div>
+  </section>
 
   <section class="view" id="vEsc">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px 6px"><div id="escRec" style="font-size:15px"></div><button id="escEnd" style="color:#9C95A3;font-size:13px;padding:6px 10px;border:1px solid #2E2A33;border-radius:8px">Terminar</button></div>
@@ -175,7 +193,13 @@ input:focus,textarea:focus{border-color:var(--pink)}
 
   <!-- AJUSTES -->
   <section class="view" id="vAj">
-    <div class="top"><h2>Ajustes</h2></div>
+    <div class="top"><div style="display:flex;align-items:center;gap:4px"><button class="ib" id="ajBack" aria-label="Volver"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h2>Ajustes</h2></div></div>
+    <div class="card">
+      <div class="lbl" style="margin-top:0">Imagen de inicio</div>
+      <div class="s" style="margin-bottom:10px">La franja de arriba de la pantalla de Inicio. Puedes poner una foto tuya de un escenario.</div>
+      <div class="row"><button class="btn ghost sm" id="fiCam" style="flex:1">Poner mi foto</button><button class="btn ghost sm" id="fiDel" style="flex:1">Usar la ilustración</button></div>
+      <input type="file" id="fiFile" accept="image/*" hidden>
+    </div>
     <div class="card">
       <div class="lbl" style="margin-top:0">Apariencia</div>
       <div class="seg" id="themeSeg"><button data-v="dark">Oscuro</button><button data-v="light">Claro</button></div>
@@ -216,7 +240,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 6</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 7</div>
   </section>
 
   <!-- EDITOR -->
@@ -243,12 +267,13 @@ input:focus,textarea:focus{border-color:var(--pink)}
 <button class="fab" id="fab">+ Idea</button>
 
 <nav class="nav" id="nav">
-  <button data-v="vLib" class="on"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="2"/></svg>Libreta</button>
+  <button data-v="vIni" class="on"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Inicio</button>
+  <button data-v="vLib"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="2"/></svg>Libreta</button>
   <button data-v="vMesa"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Mesa</button>
-  <button data-v="vTab"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="5" height="16" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="10" y="4" width="5" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="17" y="4" width="4" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>Tablero</button>
   <button data-v="vSet"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" stroke-width="2"/><circle cx="4" cy="6" r="1.3" fill="currentColor"/><circle cx="4" cy="12" r="1.3" fill="currentColor"/><circle cx="4" cy="18" r="1.3" fill="currentColor"/></svg>Setlists</button>
-  <button data-v="vAj"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Ajustes</button>
+  <button data-v="vSes"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Escenario</button>
 </nav>
+<div id="printArea"></div>
 
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet"></div>
@@ -299,7 +324,7 @@ const DEF_STYLES=[
 
 /* ============ estado ============ */
 const S={textos:{},ideas:{},setlists:{},pases:{},fotos:{},cfg:{tema:'dark',estilos:DEF_STYLES.map(s=>({...s}))},
- view:'vLib',editing:null,mFilter:'todos',libTag:'',synced:false};
+ view:'vIni',editing:null,mFilter:'todos',libTag:'',synced:false};
 
 /* ============ almacenamiento: en el aparato (IndexedDB) + Google Drive ============ */
 const CLIENT_ID='846543321318-h2lnhs8p6lv21k2v8mfno42qglan481c.apps.googleusercontent.com'; // se rellena al crear el permiso en Google Cloud
@@ -314,7 +339,8 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
  async init(){
    const ok=await IDB.open();
    if(ok){S.textos=await IDB.get('textos')||{};S.ideas=await IDB.get('ideas')||{};S.setlists=await IDB.get('setlists')||{};S.pases=await IDB.get('pases')||{};const c=await IDB.get('cfg');if(c)S.cfg={...S.cfg,...c};
-     this.tomb=await IDB.get('tomb')||{};this.meta=await IDB.get('meta')||{};}
+     this.tomb=await IDB.get('tomb')||{};S.fotoInicio=await IDB.get('fotoInicio')||null;this.meta=await IDB.get('meta')||{};}
+   Object.values(S.pases).forEach(p=>{if(!p.tipo){p.tipo='actuacion';const st=S.setlists[p.setlistId];if(st){p.items=p.items||[...(st.items||[])];p.setNombre=p.setNombre||st.nombre;p.maxMin=p.maxMin||st.maxMin}}});
    ensureFixed();applyTheme();buildStyleCSS();renderAll();setSync();
    this.loadGIS();
    window.addEventListener('online',()=>this.syncSoon(500));
@@ -464,16 +490,18 @@ const styleById=id=>S.cfg.estilos.find(s=>s.id===id);
 /* ============ navegación ============ */
 function go(v){
   S.view=v;$$('.view').forEach(x=>x.classList.toggle('on',x.id===v));
-  $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===(v==='vSetD'?'vSet':v)));
+  $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===({vSetD:'vSet',vTab:'vMesa'}[v]||v)));
   const ed=v==='vEd',esc_=v==='vEsc';$('#nav').style.display=ed||esc_?'none':'flex';$('#bars').style.display=ed?'block':'none';
-  $('#fab').style.display=(v==='vLib'||v==='vMesa'||v==='vTab')?'block':'none';if(v==='vSetD')renderSetD();
+  $('#fab').style.display=(v==='vLib'||v==='vMesa'||v==='vTab')?'block':'none';if(v!=='vAj')S.ajDesde=v;if(v==='vSetD')renderSetD();
   if(!ed)renderAll();
 }
-$$('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+$$('#nav button').forEach(b=>b.onclick=()=>{if(b.dataset.v==='vSes')S.sesFiltro=null;go(b.dataset.v)});
+$$('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
+$('#iniAj').onclick=()=>go('vAj');$('#ajBack').onclick=()=>go(S.ajDesde||'vIni');
 $('#fab').onclick=()=>{go('vLib');setTimeout(()=>$('#qText').focus(),50)};
 
 /* ============ render ============ */
-function renderAll(){applyTheme();renderLib();renderMesa();renderBoard();renderSets();if(S.view==='vSetD')renderSetD();renderAjustes()}
+function renderAll(){applyTheme();renderIni();renderLib();renderMesa();renderBoard();renderSets();renderSes();if(S.view==='vSetD')renderSetD();renderAjustes()}
 function estChip(e){return `<span class="st-chip e-${e}">${ESTL[e]||e}</span>`}
 
 /* --- Libreta --- */
@@ -576,6 +604,9 @@ function renderBoard(){
 }
 
 /* --- Ajustes --- */
+$('#fiCam').onclick=()=>$('#fiFile').click();
+$('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);S.fotoInicio=d;await IDB.set('fotoInicio',d);renderIni();toast('Imagen de inicio cambiada')};
+$('#fiDel').onclick=async()=>{S.fotoInicio=null;await IDB.del('fotoInicio');renderIni();toast('Vuelve la ilustración')};
 function renderAjustes(){
   $('#ppmV').textContent=PPM();$('#ppmM').onclick=()=>setPPM(PPM()-5);$('#ppmP').onclick=()=>setPPM(PPM()+5);
   const pm=ppmMedia();$('#ppmE').textContent=pm?`Calcular con mis ensayos (${pm.ppm} pal/min, media de ${pm.n})`:'Aún no hay ensayos: haz uno en Modo escenario → Ensayo';$('#ppmE').disabled=!pm;$('#ppmE').style.opacity=pm?1:.5;
@@ -763,19 +794,20 @@ function locales(){return [...new Set([...Object.values(S.setlists).map(s=>s.loc
 function newSet(o={}){const s={id:uid(),nombre:o.nombre||'',local:o.local||'',fecha:o.fecha||hoyISO(),maxMin:o.maxMin||10,items:o.items?[...o.items]:[],estado:'preparando',creado:now(),editado:now()};S.setlists[s.id]=s;return s}
 function saveSet(s){s.editado=now();Store.put('setlists',s)}
 
+function paseItems(p){return p.items||(S.setlists[p.setlistId]&&S.setlists[p.setlistId].items)||Object.keys(p.segmentos||p.notas||{})}
+function paseNombre(p){return p.setNombre||(S.setlists[p.setlistId]&&S.setlists[p.setlistId].nombre)||'Setlist'}
+function paseTipo(p){return p.tipo==='ensayo'?'ensayo':'actuacion'}
+function mediaPase(p){const v=Object.values(p.notas||{});return v.length?v.reduce((a,b)=>a+ +b,0)/v.length:null}
+function sesionesDe(sid){return Object.values(S.pases).filter(x=>x.setlistId===sid)}
+
+/* ---- Setlists: documentos de trabajo ---- */
 function renderSets(){
-  const all=Object.values(S.setlists);
-  const prox=all.filter(s=>s.estado!=='hecho').sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
-  const hechos=all.filter(s=>s.estado==='hecho').sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
-  const card=s=>{const d=setDur(s),over=d>s.maxMin;const p=Object.values(S.pases).find(x=>x.setlistId===s.id&&x.tipo!=='ensayo');
-    const media=p?Object.values(p.notas||{}).reduce((a,b)=>a+ +b,0)/Math.max(1,Object.keys(p.notas||{}).length):null;
+  const all=Object.values(S.setlists).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')||(b.editado||0)-(a.editado||0));
+  $('#setList').innerHTML=all.length?all.map(s=>{const d=setDur(s),over=d>s.maxMin,ses=sesionesDe(s.id);
     return `<div class="card" data-s="${s.id}" style="cursor:pointer">
-     <div class="row"><div class="t">${esc(s.nombre||'Setlist sin nombre')}</div>${s.estado==='hecho'?'<span class="st-chip e-funciona">Hecho</span>':`<span class="st-chip ${over?'e-pruebas':'e-borrador'}">${durTxt(d)} / ${s.maxMin}:00</span>`}</div>
-     <div class="s" style="margin-top:5px">${esc(s.local||'Sin local')} · ${fechaCorta(s.fecha)} · ${(s.items||[]).length} textos</div>
-     ${media!=null?`<div class="s" style="margin-top:4px">Nota media del pase ${starsTxt(media)}</div>`:''}</div>`};
-  $('#setList').innerHTML=(prox.length?'<div class="lbl" style="margin-top:4px">Próximos y en preparación</div>'+prox.map(card).join(''):'')
-   +(hechos.length?'<div class="lbl">Pases hechos</div>'+hechos.map(card).join(''):'')
-   ||'<div class="empty">Aún no hay setlists.<br>Crea uno para tu próximo pase: eliges los textos, ves si caben en el tiempo y después puntúas cada chiste.</div>';
+     <div class="row"><div class="t">${esc(s.nombre||'Setlist sin nombre')}</div><span class="st-chip ${over?'e-pruebas':'e-borrador'}">${durTxt(d)} / ${s.maxMin}:00</span></div>
+     <div class="s" style="margin-top:5px">${esc(s.local||'Sin local')} · ${fechaCorta(s.fecha)} · ${(s.items||[]).length} textos${ses.length?` · usado ${ses.length} ${ses.length===1?'vez':'veces'} en Escenario`:''}</div></div>`}).join('')
+   :'<div class="empty">Aún no hay setlists.<br>Un setlist es la lista ordenada de textos para un show: eliges los textos, ves si caben en el tiempo, lo imprimes y lo llevas a Escenario para ensayar o actuar.</div>';
   $$('#setList [data-s]').forEach(c=>c.onclick=()=>openSet(c.dataset.s));
 }
 $('#newSet').onclick=()=>editSetInfo(null);
@@ -783,8 +815,8 @@ function editSetInfo(id){
   const s=id?S.setlists[id]:null;const loc=locales();
   openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:12px"><button class="s" id="sC">Cancelar</button><div class="t">${s?'Datos del setlist':'Nuevo setlist'}</div><button class="s" style="color:var(--pink);font-weight:800" id="sS">${s?'Guardar':'Crear'}</button></div>
    <div class="lbl">Nombre</div><input id="sN" value="${esc(s?s.nombre:'')}" placeholder="Ej.: Open mic jueves">
-   <div class="lbl">Local</div><input id="sL" value="${esc(s?s.local:'')}" placeholder="Ej.: Bar El Escenario" list="locs"><datalist id="locs">${loc.map(l=>`<option value="${esc(l)}">`).join('')}</datalist>
-   <div class="lbl">Fecha</div><input id="sF" type="date" value="${s?s.fecha||'':hoyISO()}">
+   <div class="lbl">Local (opcional)</div><input id="sL" value="${esc(s?s.local:'')}" placeholder="Ej.: Bar El Escenario" list="locs"><datalist id="locs">${loc.map(l=>`<option value="${esc(l)}">`).join('')}</datalist>
+   <div class="lbl">Fecha (opcional)</div><input id="sF" type="date" value="${s?s.fecha||'':hoyISO()}">
    <div class="lbl">Tiempo máximo</div>${(()=>{const OPC=[8,10,15,20,30,45,60],cur=s?s.maxMin:10,otro=!OPC.includes(cur);
      return `<div class="seg" id="sM">${OPC.map(m=>`<button data-m="${m}" class="${cur===m?'on':''}">${m}′</button>`).join('')}<button data-m="otro" class="${otro?'on':''}">Otro</button></div>
      <div id="sMo" style="display:${otro?'flex':'none'};align-items:center;gap:8px;margin-top:8px"><input id="sMv" type="number" min="1" max="240" inputmode="numeric" value="${otro?cur:''}" placeholder="Minutos" style="width:120px"><span class="s">minutos</span></div>`})()}`);
@@ -799,8 +831,8 @@ function editSetInfo(id){
 function openSet(id){S.setOpen=id;go('vSetD')}
 function renderSetD(){
   const s=S.setlists[S.setOpen];if(!s){go('vSet');return}
-  const d=setDur(s),pct=Math.min(100,d/s.maxMin*100),over=d>s.maxMin,hecho=s.estado==='hecho';
-  const pase=Object.values(S.pases).find(x=>x.setlistId===s.id&&x.tipo!=='ensayo');
+  const d=setDur(s),pct=Math.min(100,d/s.maxMin*100),over=d>s.maxMin,ses=sesionesDe(s.id);
+  const nA=ses.filter(x=>paseTipo(x)==='actuacion').length,nE=ses.length-nA;
   $('#setD').innerHTML=`
    <div class="top"><button class="ib" id="sdBack"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
      <div style="flex:1;min-width:0;padding:0 6px"><h2 style="font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.nombre||'Setlist sin nombre')}</h2><div class="s">${esc(s.local||'Sin local')} · ${fechaCorta(s.fecha)}</div></div>
@@ -808,31 +840,28 @@ function renderSetD(){
    <div class="card"><div class="row" style="margin-bottom:8px"><div class="t" style="font-size:18px">${durTxt(d)} <span class="s">de ${s.maxMin}:00 máx.</span></div><span class="st-chip ${over?'e-pruebas':'e-funciona'}">${over?'Te pasas '+durTxt(d-s.maxMin):'Cabe'}</span></div>
      <div class="split"><div style="width:${pct}%;background:${over?'var(--amber)':'var(--green)'}"></div></div>
      <div class="s" style="margin-top:6px">Tiempo calculado a ${PPM()} palabras por minuto con el texto hablado.</div></div>
-   ${(s.items||[]).length?'<button class="btn" id="sdEsc" style="width:100%;margin-bottom:10px;background:#141216;color:#fff;border:1px solid var(--pink)">▶ Abrir modo escenario</button>':''}
-   ${pase?`<div class="card"><div class="lbl" style="margin-top:0">Pase puntuado</div><div class="s">${pase.comentario?esc(pase.comentario):'Sin comentario'}</div>${pase.curva||pase.grab?`<button class="btn ghost sm" id="sdAna" style="margin-top:10px">${pase.grab?(pase.grab.tipo==='video'?'Ver vídeo y risas':'Escuchar y ver risas'):'Ver risas del pase'}</button>`:''}</div>`:''}
-   ${(()=>{const ens=Object.values(S.pases).filter(x=>x.setlistId===s.id&&x.tipo==='ensayo').sort((a,b)=>(b.creado||0)-(a.creado||0));return ens.length?`<div class="card"><div class="lbl" style="margin-top:0">Ensayos (${ens.length})</div>${ens.map(e=>`<button class="row" data-ens="${e.id}" style="width:100%;padding:7px 0;border-bottom:1px solid var(--line)"><span style="font-size:13px">${fechaCorta(e.fecha)} · ${mmss(e.duracion||0)}</span><span class="s">${e.ppm?e.ppm+' pal/min':''}${e.grab?' · 🎙':''} ›</span></button>`).join('')}</div>`:''})()}
-   <div id="sdItems">${(s.items||[]).map((id,i)=>{const t=S.textos[id];if(!t)return `<div class="card s">Texto borrado <button class="mv" data-x="${i}">✕</button></div>`;const st=statsOf(t);
+   ${(s.items||[]).length?'<button class="btn" id="sdEsc" style="width:100%;margin-bottom:10px;background:#141216;color:#fff;border:1px solid var(--pink)">▶ Llevar a Escenario (ensayar o actuar)</button>':''}
+   <div id="sdItems">${(s.items||[]).map((id,i)=>{const t=S.textos[id];if(!t)return `<div class="card s row">Texto borrado <button class="mv" data-x="${i}">✕</button></div>`;const st=statsOf(t);
      return `<div class="card" style="padding:10px 12px"><div class="row">
        <div style="min-width:0;flex:1;cursor:pointer" data-open="${id}"><div class="t" style="font-size:13.5px">${i+1}. ${esc(t.titulo||'Sin título')}</div>
-         <div class="s" style="margin-top:3px">${durTxt(minOf(st))} · ${estChip(t.estado)} ${pase&&pase.notas&&pase.notas[id]!=null?starsTxt(pase.notas[id]):''}</div></div>
-       ${hecho?'':`<div style="display:flex;gap:4px"><button class="mv" data-u="${i}" ${i===0?'style="visibility:hidden"':''}>↑</button><button class="mv" data-d="${i}" ${i===s.items.length-1?'style="visibility:hidden"':''}>↓</button><button class="mv" data-x="${i}">✕</button></div>`}
+         <div class="s" style="margin-top:3px">${durTxt(minOf(st))} · ${estChip(t.estado)} ${notaMedia(id)!=null?'· ★ '+notaMedia(id).toFixed(1).replace('.',','):''}</div></div>
+       <div style="display:flex;gap:4px"><button class="mv" data-u="${i}" ${i===0?'style="visibility:hidden"':''}>↑</button><button class="mv" data-d="${i}" ${i===s.items.length-1?'style="visibility:hidden"':''}>↓</button><button class="mv" data-x="${i}">✕</button></div>
      </div></div>`}).join('')||'<div class="empty" style="padding:20px">Añade textos desde tu material.</div>'}</div>
-   ${hecho?'':'<button class="btn ghost" id="sdAdd" style="width:100%;margin-bottom:10px;border-style:dashed">+ Añadir textos</button>'}
-   <div class="row" style="margin-top:6px">${hecho
-     ?'<button class="btn ghost" id="sdDup" style="flex:1">Repetir este setlist</button><button class="btn" id="sdPunt" style="flex:1">Ver / cambiar notas</button>'
-     :'<button class="btn ghost" id="sdDel" style="flex:1">Borrar</button><button class="btn" id="sdPunt" style="flex:2" '+((s.items||[]).length?'':'disabled')+'>Hecho: puntuar el pase</button>'}</div>
-   ${hecho?'<button class="btn ghost sm" id="sdDel" style="width:100%;margin-top:10px">Borrar setlist y su pase</button>':''}`;
+   <button class="btn ghost" id="sdAdd" style="width:100%;margin-bottom:10px;border-style:dashed">+ Añadir textos</button>
+   ${ses.length?`<button class="s" id="sdSes" style="display:block;margin:4px 0 12px;color:var(--pink)">Usado en ${nA} actuaci${nA===1?'ón':'ones'} y ${nE} ensayo${nE===1?'':'s'} · ver en Escenario ›</button>`:''}
+   <div class="row" style="gap:8px"><button class="btn ghost" id="sdDup" style="flex:1">Duplicar</button><button class="btn ghost" id="sdPrint" style="flex:1">Imprimir / PDF</button><button class="btn ghost" id="sdDel" style="flex:1">Borrar</button></div>`;
   $('#sdBack').onclick=()=>go('vSet');$('#sdEdit').onclick=()=>editSetInfo(s.id);
   $$('#setD [data-open]').forEach(b=>b.onclick=()=>openEditor(b.dataset.open));
   const mv=(i,j)=>{const a=s.items;[a[i],a[j]]=[a[j],a[i]];saveSet(s);renderSetD()};
   $$('#setD [data-u]').forEach(b=>b.onclick=()=>mv(+b.dataset.u,+b.dataset.u-1));
   $$('#setD [data-d]').forEach(b=>b.onclick=()=>mv(+b.dataset.d,+b.dataset.d+1));
   $$('#setD [data-x]').forEach(b=>b.onclick=()=>{s.items.splice(+b.dataset.x,1);saveSet(s);renderSetD()});
-  if($('#sdAdd'))$('#sdAdd').onclick=()=>pickTextos(s);
-  $$('#setD [data-ens]').forEach(b=>b.onclick=()=>verEnsayo(b.dataset.ens,false));
-  $('#sdPunt').onclick=()=>puntuar(s);if($('#sdEsc'))$('#sdEsc').onclick=()=>prepEscenario(s);if($('#sdAna'))$('#sdAna').onclick=()=>verAnalisis(pase.id,false);
-  if($('#sdDup'))$('#sdDup').onclick=()=>{const n=newSet({nombre:s.nombre,local:s.local,maxMin:s.maxMin,items:s.items,fecha:hoyISO()});saveSet(n);openSet(n.id);toast('Setlist copiado para un nuevo pase')};
-  $$('#sdDel').forEach(b=>b.onclick=()=>confirmBox('¿Borrar este setlist'+(pase?' y sus puntuaciones':'')+'?','Borrar',()=>{delete S.setlists[s.id];Store.del('setlists',s.id);Object.values(S.pases).filter(x=>x.setlistId===s.id&&x.tipo==='ensayo').forEach(e=>{if(e.grab)IDB.del('grab:'+e.id);delete S.pases[e.id];Store.del('pases',e.id)});if(pase){if(pase.grab){IDB.del('grab:'+pase.id);if(pase.grab.driveId&&Store.hasToken())Store.api('files/'+pase.grab.driveId,{method:'DELETE'}).catch(()=>{})}delete S.pases[pase.id];Store.del('pases',pase.id)}go('vSet')}));
+  $('#sdAdd').onclick=()=>pickTextos(s);
+  if($('#sdEsc'))$('#sdEsc').onclick=()=>prepEscenario(s);
+  if($('#sdSes'))$('#sdSes').onclick=()=>{S.sesFiltro=s.id;go('vSes')};
+  $('#sdDup').onclick=()=>{const n=newSet({nombre:(s.nombre||'Setlist')+' (copia)',local:s.local,maxMin:s.maxMin,items:s.items,fecha:hoyISO()});saveSet(n);openSet(n.id);toast('Setlist duplicado')};
+  $('#sdPrint').onclick=()=>printSetlist(s);
+  $('#sdDel').onclick=()=>confirmBox('¿Borrar este setlist? Los ensayos y actuaciones que hiciste con él se conservan en Escenario.','Borrar',()=>{delete S.setlists[s.id];Store.del('setlists',s.id);go('vSet')});
 }
 function pickTextos(s){
   let q='',f='activos';const sel=new Set();
@@ -851,20 +880,48 @@ function pickTextos(s){
   $('#pkC').onclick=closeSheet;$('#pkOk').onclick=()=>{s.items=[...(s.items||[]),...sel];saveSet(s);closeSheet();renderSetD()};
   draw();
 }
-function puntuar(s,sug){
-  let p=Object.values(S.pases).find(x=>x.setlistId===s.id&&x.tipo!=='ensayo');
-  const notas={...(p?p.notas:{}),...(sug||{})};
+function printSetlist(s){
+  const ids=(s.items||[]).filter(id=>S.textos[id]);let acc=0;
+  $('#printArea').innerHTML=`<h1 style="font-size:26pt;margin:0 0 4pt">${esc(s.nombre||'Setlist')}</h1>
+   <div style="font-size:11pt;color:#555;margin-bottom:16pt">${esc(s.local||'')}${s.local?' · ':''}${s.fecha?fechaCorta(s.fecha):''} · ${durTxt(setDur(s))} de ${s.maxMin}:00 máx.</div>
+   <table style="width:100%;border-collapse:collapse;font-size:18pt">${ids.map((id,i)=>{const t=S.textos[id],m=minOf(statsOf(t));acc+=m;
+     return `<tr style="border-bottom:1pt solid #ccc"><td style="padding:8pt 6pt;width:28pt;color:#999">${i+1}</td><td style="padding:8pt 6pt;font-weight:700">${esc(t.titulo||'Sin título')}</td><td style="padding:8pt 6pt;text-align:right;font-size:12pt;color:#777;white-space:nowrap">${durTxt(m)} · ${durTxt(acc)}</td></tr>`}).join('')}</table>
+   <div style="margin-top:14pt;font-size:9pt;color:#999">stand UPP comedy</div>`;
+  window.print();
+}
+
+/* ---- Escenario: ensayos y actuaciones ---- */
+function renderSes(){
+  const f=S.sesFiltro,all=Object.values(S.pases).filter(p=>!f||p.setlistId===f).sort((a,b)=>(b.creado||0)-(a.creado||0));
+  const card=p=>{const m=mediaPase(p),ens=paseTipo(p)==='ensayo';
+    return `<div class="card" data-p="${p.id}" style="cursor:pointer"><div class="row"><div class="t">${esc(paseNombre(p))}</div><span class="st-chip ${ens?'e-borrador':'e-cerrado'}">${ens?'Ensayo':'Actuación'}</span></div>
+     <div class="s" style="margin-top:5px">${fechaCorta(p.fecha)}${p.local?' · '+esc(p.local):''} · ${mmss(p.duracion||0)}${p.ppm&&ens?' · '+p.ppm+' pal/min':''}${p.grab?(p.grab.tipo==='video'?' · vídeo':' · audio'):''}</div>
+     ${m!=null?`<div class="s" style="margin-top:4px">Nota media ${starsTxt(m)}</div>`:(!ens&&!Object.keys(p.notas||{}).length?'<div class="s" style="margin-top:4px;color:var(--amber)">Sin puntuar</div>':'')}</div>`};
+  const act=all.filter(p=>paseTipo(p)==='actuacion'),ens=all.filter(p=>paseTipo(p)==='ensayo');
+  $('#sesFil').innerHTML=f?`<div class="banner row" style="margin-bottom:10px"><span>Solo: ${esc((S.setlists[f]||{}).nombre||'este setlist')}</span><button class="chip on" id="sesAll" style="margin:0">Ver todo</button></div>`:'';
+  if($('#sesAll'))$('#sesAll').onclick=()=>{S.sesFiltro=null;renderSes()};
+  $('#sesList').innerHTML=(act.length?'<div class="lbl" style="margin-top:4px">Actuaciones</div>'+act.map(card).join(''):'')+(ens.length?'<div class="lbl">Ensayos</div>'+ens.map(card).join(''):'')
+   ||'<div class="empty">Aquí se guardan tus ensayos y actuaciones.<br>Pulsa <b>Nueva sesión</b>, elige un setlist y sal a escena: la app cronometra cada texto, puede grabarte y, en las actuaciones, detecta las risas.</div>';
+  $$('#sesList [data-p]').forEach(c=>c.onclick=()=>abrirSesion(c.dataset.p));
+}
+function abrirSesion(pid){const p=S.pases[pid];if(!p)return;if(paseTipo(p)==='ensayo')verEnsayo(pid,false);else verAnalisis(pid,false)}
+$('#newSes').onclick=()=>{const sets=Object.values(S.setlists).filter(s=>(s.items||[]).some(id=>S.textos[id])).sort((a,b)=>(b.editado||0)-(a.editado||0));
+  if(!sets.length)return confirmBox('Para salir a escena necesitas un setlist con textos. ¿Crear uno ahora?','Crear setlist',()=>{go('vSet');editSetInfo(null)});
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:4px">¿Con qué setlist?</div><div class="s" style="margin-bottom:12px">Se importa tal como está ahora; si luego cambias el setlist, esta sesión no cambia.</div>
+   ${sets.map(s=>`<button class="card row" data-s="${s.id}" style="width:100%;text-align:left"><span style="min-width:0"><span class="t" style="display:block">${esc(s.nombre||'Setlist sin nombre')}</span><span class="s">${(s.items||[]).length} textos · ${durTxt(setDur(s))}${s.local?' · '+esc(s.local):''}</span></span><span style="color:var(--pink)">›</span></button>`).join('')}`);
+  $$('#sheet [data-s]').forEach(b=>b.onclick=()=>prepEscenario(S.setlists[b.dataset.s]))};
+function puntuarPase(p,sug){
+  const ids=paseItems(p).filter(id=>S.textos[id]);const notas={...(p.notas||{}),...(sug||{})};
   openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:6px"><button class="s" id="puC">Cancelar</button><div class="t">¿Cómo fue cada chiste?</div><button class="s" style="color:var(--pink);font-weight:800" id="puS">Guardar</button></div>
-   <div class="s" style="margin-bottom:12px">${esc(s.local||'Sin local')} · ${fechaCorta(s.fecha)}. Toca las estrellas: 1 no funcionó, 5 funcionó muy bien.${sug?' Vienen rellenas con la sugerencia del detector de risas: corrígelas a tu gusto.':''}</div>
-   <div id="puL">${s.items.filter(id=>S.textos[id]).map(id=>`<div class="card" style="padding:10px 12px"><div class="t" style="font-size:13.5px;margin-bottom:6px">${esc(S.textos[id].titulo||'Sin título')}</div>
+   <div class="s" style="margin-bottom:12px">${esc(p.local||'Sin local')} · ${fechaCorta(p.fecha)}. Toca las estrellas: 1 no funcionó, 5 funcionó muy bien.${sug?' Vienen rellenas con la sugerencia del detector de risas: corrígelas a tu gusto.':''}</div>
+   <div class="lbl" style="margin-top:0">Local</div><input id="puLo" value="${esc(p.local||'')}" list="locs2" placeholder="¿Dónde actuaste?"><datalist id="locs2">${locales().map(l=>`<option value="${esc(l)}">`).join('')}</datalist>
+   <div id="puL" style="margin-top:12px">${ids.map(id=>`<div class="card" style="padding:10px 12px"><div class="t" style="font-size:13.5px;margin-bottom:6px">${esc(S.textos[id].titulo||'Sin título')}</div>
      <div style="display:flex;gap:6px" data-id="${id}">${[1,2,3,4,5].map(n=>`<button data-n="${n}" style="font-size:26px;line-height:1;color:${(notas[id]||0)>=n?'var(--pink)':'var(--faint)'}">★</button>`).join('')}</div></div>`).join('')}</div>
-   <div class="lbl">Comentario del pase (opcional)</div><textarea id="puT" placeholder="Público, sonido, qué improvisaste…">${esc(p?p.comentario||'':'')}</textarea>`);
+   <div class="lbl">Comentario (opcional)</div><textarea id="puT" placeholder="Público, sonido, qué improvisaste…">${esc(p.comentario||'')}</textarea>`);
   $$('#puL [data-id]').forEach(g=>g.querySelectorAll('button').forEach(b=>b.onclick=()=>{const id=g.dataset.id,n=+b.dataset.n;notas[id]=notas[id]===n?undefined:n;if(notas[id]===undefined)delete notas[id];
     g.querySelectorAll('button').forEach(x=>x.style.color=(notas[id]||0)>=+x.dataset.n?'var(--pink)':'var(--faint)')}));
   $('#puC').onclick=closeSheet;
-  $('#puS').onclick=()=>{if(!p){p={id:uid(),setlistId:s.id,creado:now()};S.pases[p.id]=p}
-    Object.assign(p,{fecha:s.fecha,local:s.local,notas,comentario:$('#puT').value.trim(),editado:now()});Store.put('pases',p);
-    s.estado='hecho';saveSet(s);closeSheet();renderSetD();toast('Pase guardado')};
+  $('#puS').onclick=()=>{Object.assign(p,{notas,local:$('#puLo').value.trim(),comentario:$('#puT').value.trim(),editado:now()});Store.put('pases',p);closeSheet();renderAll();toast('Actuación guardada')};
 }
 
 /* ============ modo escenario, grabación y risas ============ */
@@ -877,23 +934,24 @@ function pickMime(video){const c=video?['video/webm;codecs=vp8,opus','video/webm
 function prepEscenario(s){
   if(!(s.items||[]).filter(id=>S.textos[id]).length)return toast('Añade textos al setlist primero');
   const puede=!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia&&window.MediaRecorder);
-  let tipo=S.cfg.grabTipo||'audio';if(!puede)tipo='nada';const hecho=s.estado==='hecho';let modo=hecho?'ensayo':(S.cfg.escModoUso||'actuacion');
+  let tipo=S.cfg.grabTipo||'audio';if(!puede)tipo='nada';let modo=S.cfg.escModoUso||'actuacion';
   openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:4px">Modo escenario</div>
    <div class="s" style="margin-bottom:12px;line-height:1.5">Pantalla en negro con el setlist en grande, sin que se apague. Pulsa <b>Siguiente</b> al empezar cada chiste: así la app mide cuánto dura cada uno.</div>
    <div class="lbl">¿Para qué es?</div>
-   <div class="seg" id="gM"><button data-m="ensayo" class="${modo==='ensayo'?'on':''}">Ensayo</button><button data-m="actuacion" class="${modo==='actuacion'?'on':''}" ${hecho?'disabled style="opacity:.4"':''}>Actuación</button></div>${hecho?'<div class="s" style="margin-top:6px">Este setlist ya tiene su actuación puntuada. Para actuar otra vez, usa «Repetir este setlist».</div>':''}
+   <div class="seg" id="gM"><button data-m="ensayo" class="${modo==='ensayo'?'on':''}">Ensayo</button><button data-m="actuacion" class="${modo==='actuacion'?'on':''}">Actuación</button></div>
    <div class="s" id="gMi" style="margin:8px 0 4px;line-height:1.5"></div>
+   <div id="gLoW"><div class="lbl">Local</div><input id="gLo" value="${esc(s.local||'')}" list="locs3" placeholder="¿Dónde actúas?"><datalist id="locs3">${locales().map(l=>`<option value="${esc(l)}">`).join('')}</datalist></div>
    <div class="lbl">Grabar</div>
    <div class="seg" id="gT">${[['nada','No grabar'],['audio','Solo audio'],['video','Vídeo']].map(([k,l])=>`<button data-k="${k}" class="${tipo===k?'on':''}" ${!puede&&k!=='nada'?'disabled':''}>${l}</button>`).join('')}</div>
    <div class="s" style="margin:8px 0 14px;line-height:1.5">${puede?'El audio ocupa poco (unos 5 MB cada 10 minutos). El vídeo usa la cámara delantera y ocupa bastante más.':'Este navegador no permite grabar: funcionará sin grabación.'}</div>
    <button class="btn" id="gGo" style="width:100%">Continuar</button>`);
-  const info=()=>{$('#gMi').innerHTML=modo==='ensayo'?'Mide el tiempo real de cada texto y tu velocidad al hablar. Sin detector de risas. Puedes activar el <b>metrónomo</b>.':'Para pases con público: con grabación se activa el <b>detector de risas</b> y al terminar puntúas cada chiste.'};info();
+  const info=()=>{$('#gLoW').style.display=modo==='actuacion'?'block':'none';$('#gMi').innerHTML=modo==='ensayo'?'Mide el tiempo real de cada texto y tu velocidad al hablar. Sin detector de risas. Puedes activar el <b>metrónomo</b>.':'Para pases con público: con grabación se activa el <b>detector de risas</b> y al terminar puntúas cada chiste.'};info();
   $$('#gM button').forEach(b=>b.onclick=()=>{modo=b.dataset.m;$$('#gM button').forEach(x=>x.classList.toggle('on',x===b));info()});
   $$('#gT button').forEach(b=>b.onclick=()=>{tipo=b.dataset.k;$$('#gT button').forEach(x=>x.classList.toggle('on',x===b))});
-  $('#gGo').onclick=async()=>{S.cfg.grabTipo=tipo;S.cfg.escModoUso=modo;Store.cfg();closeSheet();await startEscenario(s,tipo,modo)};
+  $('#gGo').onclick=async()=>{S.cfg.grabTipo=tipo;S.cfg.escModoUso=modo;Store.cfg();ESC.local=$('#gLo').value.trim();S.escDesde=S.view;closeSheet();await startEscenario(s,tipo,modo)};
 }
 async function startEscenario(s,tipo,modo){
-  Object.assign(ESC,{modo:modo||'actuacion',metro:false,s,i:0,marks:[],chunks:[],L:[],F:[],tipo,stream:null,rec:null,mime:'',live:0,started:false,counting:false,an:null,ctx:null});
+  Object.assign(ESC,{local:ESC.local,modo:modo||'actuacion',metro:false,s,i:0,marks:[],chunks:[],L:[],F:[],tipo,stream:null,rec:null,mime:'',live:0,started:false,counting:false,an:null,ctx:null});
   try{await document.documentElement.requestFullscreen?.()}catch(e){}
   try{ESC.wake=await navigator.wakeLock?.request('screen')}catch(e){}
   if(S.cfg.escLock!==false)await lockRot(true,true);
@@ -998,7 +1056,7 @@ function cuentaAtras(){if(ESC.counting||ESC.started)return;ESC.counting=true;
 function cancelEscenario(){metroOn(false);clearInterval(ESC.timer);document.removeEventListener('visibilitychange',escVis);
   try{ESC.wake&&ESC.wake.release()}catch(e){}try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch(e){}ESC.rotLock=false;try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}
   $('#escCam').srcObject=null;$('#escCam').style.display='none';ESC.stream&&ESC.stream.getTracks().forEach(t=>t.stop());try{ESC.ctx&&ESC.ctx.close()}catch(e){}
-  S.setOpen=ESC.s.id;go('vSetD')}
+  go(S.escDesde||'vSes')}
 $('#escNext').onclick=()=>{if(!ESC.started)return cuentaAtras();const ids=escItems();if(ESC.i<ids.length-1){ESC.i++;ESC.marks.push(elapsed());renderEsc()}else endEscenario()};
 $('#escPrev').onclick=()=>{if(!ESC.started){if(!ESC.counting)cancelEscenario();return}if(ESC.i>0){ESC.i--;ESC.marks.pop();renderEsc()}};
 $('#escEnd').onclick=()=>{if(!ESC.started)return cuentaAtras();confirmBox('¿Terminar el pase?','Terminar',endEscenario)};
@@ -1011,16 +1069,15 @@ async function endEscenario(){
   $('#escCam').srcObject=null;$('#escCam').style.display='none';
   ESC.stream&&ESC.stream.getTracks().forEach(t=>t.stop());try{ESC.ctx&&ESC.ctx.close()}catch(e){}
   const s=ESC.s,ids=escItems().slice(0,ESC.i+1);
-  let p=ESC.modo==='ensayo'?null:Object.values(S.pases).find(x=>x.setlistId===s.id&&x.tipo!=='ensayo');
-  if(!p){p={id:uid(),setlistId:s.id,creado:now(),notas:{}};if(ESC.modo==='ensayo'){p.tipo='ensayo';p.fecha=hoyISO()}S.pases[p.id]=p}
+  const p={id:uid(),tipo:ESC.modo==='ensayo'?'ensayo':'actuacion',setlistId:s.id,setNombre:s.nombre||'Setlist',items:escItems(),maxMin:s.maxMin,creado:now(),notas:{}};S.pases[p.id]=p;
   const seg={};ids.forEach((id,k)=>{seg[id]=[Math.round(ESC.marks[k]*10)/10,Math.round((k+1<ESC.marks.length?ESC.marks[k+1]:total)*10)/10]});
-  Object.assign(p,{fecha:p.tipo==='ensayo'?hoyISO():s.fecha,local:p.tipo==='ensayo'?'':s.local,segmentos:seg,duracion:Math.round(total),editado:now()});
+  Object.assign(p,{fecha:hoyISO(),local:p.tipo==='ensayo'?'':(ESC.local||s.local||''),segmentos:seg,duracion:Math.round(total),editado:now()});
   if(p.tipo==='ensayo')p.ppm=ppmDe(p);
   if(ESC.L.length)p.curva={hz:5,L:ESC.L,F:ESC.F,sens:S.cfg.sensRisa||4};
   if(blob&&blob.size){await IDB.set('grab:'+p.id,blob);p.grab={tipo:ESC.tipo,mime:blob.type,size:blob.size,local:true}}
   Store.put('pases',p);
-  S.setOpen=s.id;go('vSetD');
-  if(p.tipo==='ensayo')verEnsayo(p.id,true);else if(p.curva)verAnalisis(p.id,true);else puntuar(s);
+  S.sesFiltro=null;go('vSes');
+  if(p.tipo==='ensayo')verEnsayo(p.id,true);else if(p.curva)verAnalisis(p.id,true);else puntuarPase(p);
 }
 
 /* --- ensayos y velocidad de habla --- */
@@ -1033,7 +1090,7 @@ async function verEnsayo(pid,nuevo){
   const filas=Object.entries(p.segmentos||{}).map(([id,[a,b]])=>{const t=S.textos[id];const est=t?minOf(statsOf(t))*60:0,real=b-a,dif=real-est;const ppm=t&&real>=5?Math.round(palabras(t)/(real/60)):null;
     return `<div class="card" style="padding:10px 12px;cursor:pointer" data-go="${a}"><div class="row"><div class="t" style="font-size:13.5px">${esc(t?t.titulo||'Sin título':'Texto borrado')}</div><b style="white-space:nowrap">${mmss(real)}</b></div>
       <div class="s" style="margin-top:3px">la app estimaba ${mmss(est)} · <span style="color:${Math.abs(dif)<10?'var(--green)':'var(--amber)'}">${dif>=0?'+':'−'}${mmss(Math.abs(dif))}</span>${ppm?` · ${ppm} pal/min`:''}</div></div>`}).join('');
-  openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:8px"><button class="s" id="veC">Cerrar</button><div class="t">Ensayo · ${fechaCorta(p.fecha)}</div><span style="width:40px"></span></div>
+  openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:8px"><button class="s" id="veC">Cerrar</button><div class="t">Ensayo · ${esc(paseNombre(p))}</div><span style="width:40px"></span></div>
    ${blob?(p.grab.tipo==='video'?`<video id="veM" src="${URL.createObjectURL(blob)}" controls playsinline style="width:100%;border-radius:10px;margin-bottom:10px;background:#000"></video>`:`<audio id="veM" src="${URL.createObjectURL(blob)}" controls style="width:100%;margin-bottom:10px"></audio>`):''}
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"><div class="stat"><b>${mmss(p.duracion||0)}</b><span class="s">tiempo total</span></div><div class="stat"><b>${p.ppm||'—'}</b><span class="s">palabras por minuto</span></div></div>
    ${p.ppm&&p.ppm!==PPM()?`<div class="banner">Hoy has hablado a <b>${p.ppm}</b> palabras por minuto y la app calcula con <b>${PPM()}</b>. <button class="chip on" id="veU" style="margin:6px 0 0">Usar ${p.ppm} para calcular tiempos</button></div>`:''}
@@ -1043,8 +1100,8 @@ async function verEnsayo(pid,nuevo){
   $('#veC').onclick=closeSheet;
   if($('#veU'))$('#veU').onclick=()=>{setPPM(p.ppm);closeSheet()};
   $$('#sheet [data-go]').forEach(c=>c.onclick=()=>{const m=$('#veM');if(m){m.currentTime=+c.dataset.go;m.play()}});
-  if($('#veDG'))$('#veDG').onclick=()=>confirmBox('¿Borrar la grabación de este ensayo?','Borrar',async()=>{await IDB.del('grab:'+p.id);if(p.grab.driveId)Store.tomb['drv:'+p.grab.driveId]=now();delete p.grab;p.editado=now();Store.put('pases',p);renderSetD()});
-  $('#veD').onclick=()=>confirmBox('¿Borrar este ensayo?','Borrar',async()=>{if(p.grab){await IDB.del('grab:'+p.id);if(p.grab.driveId)Store.tomb['drv:'+p.grab.driveId]=now()}delete S.pases[p.id];Store.del('pases',p.id);renderSetD()});
+  if($('#veDG'))$('#veDG').onclick=()=>confirmBox('¿Borrar la grabación de este ensayo?','Borrar',async()=>{await IDB.del('grab:'+p.id);if(p.grab.driveId)Store.tomb['drv:'+p.grab.driveId]=now();delete p.grab;p.editado=now();Store.put('pases',p);renderAll()});
+  $('#veD').onclick=()=>confirmBox('¿Borrar este ensayo?','Borrar',async()=>{if(p.grab){await IDB.del('grab:'+p.id);if(p.grab.driveId)Store.tomb['drv:'+p.grab.driveId]=now()}delete S.pases[p.id];Store.del('pases',p.id);renderAll()});
 }
 /* --- detector de risas (aproximado) --- */
 function detectarRisas(c,sens){
@@ -1075,22 +1132,24 @@ function drawCurva(cv,p,sens,cursor){
   if(cursor!=null){g.fillStyle='#fff';g.fillRect(cursor*hz/(n-1)*W-1,0,3,H)}
 }
 async function verAnalisis(pid,nuevo){
-  const p=S.pases[pid];if(!p)return;const s=S.setlists[p.setlistId];let sens=p.curva?.sens||S.cfg.sensRisa||4;
-  openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:8px"><button class="s" id="vaC">Cerrar</button><div class="t">Análisis del pase</div><span style="width:40px"></span></div>
-   <div class="s" style="margin-bottom:8px">${esc(p.local||'')} · ${fechaCorta(p.fecha)} · ${mmss(p.duracion||0)}</div>
+  const p=S.pases[pid];if(!p)return;let sens=p.curva?.sens||S.cfg.sensRisa||4;
+  openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:8px"><button class="s" id="vaC">Cerrar</button><div class="t">Actuación</div><button class="s" id="vaX" style="color:var(--pink)">Borrar</button></div>
+   <div class="s" style="margin-bottom:8px">${esc(paseNombre(p))} · ${esc(p.local||'Sin local')} · ${fechaCorta(p.fecha)} · ${mmss(p.duracion||0)}</div>
+   ${p.comentario?`<div class="card s">${esc(p.comentario)}</div>`:''}
    <div id="vaMedia"></div>
    ${p.curva?`<div class="card" style="padding:10px"><div class="row s" style="margin-bottom:6px"><span>Risas a lo largo del pase</span><span style="color:var(--pink)">■ risa</span></div>
      <canvas id="vaCv" style="width:100%;height:110px;display:block;background:#0E0D10;border-radius:8px;cursor:pointer"></canvas>
      <div class="row" style="margin-top:10px"><span class="s">Sensibilidad</span><input id="vaS" type="range" min="1.5" max="9" step=".5" value="${sens}" style="flex:1;padding:0;margin-left:10px;accent-color:var(--pink)"></div>
-     <div class="s" style="margin-top:4px">Si marca risas donde no las hubo, baja la sensibilidad; si se le escapan, súbela.</div></div>`:'<div class="s">Este pase no se grabó: no hay curva de risas.</div>'}
+     <div class="s" style="margin-top:4px">Si marca risas donde no las hubo, baja la sensibilidad; si se le escapan, súbela.</div></div>`:`<div class="s" style="margin-bottom:8px">Esta actuación no se grabó: no hay curva de risas.</div>${paseItems(p).filter(id=>S.textos[id]).map(id=>`<div class="card row" style="padding:10px 12px"><span class="t" style="font-size:13.5px">${esc(S.textos[id].titulo||'Sin título')}</span>${p.notas&&p.notas[id]!=null?starsTxt(p.notas[id]):'<span class="s">sin nota</span>'}</div>`).join('')}`}
    <div id="vaL"></div>
    ${p.curva?`<button class="btn ghost sm" id="vaDelR" style="width:100%;margin-top:8px">Borrar las risas de este pase</button>`:''}
    ${p.grab?`<button class="btn ghost sm" id="vaDel" style="width:100%;margin-top:8px">Borrar la grabación${p.grab.driveId?' (también de Drive)':''}</button><div class="s" style="margin-top:4px;text-align:center">Las notas se conservan.</div>`:''}
    <button class="btn" id="vaP" style="width:100%;margin-top:8px">${nuevo?'Puntuar con estas sugerencias':'Ver / cambiar notas'}</button>`);
   $('#vaC').onclick=closeSheet;
-  if($('#vaDelR'))$('#vaDelR').onclick=()=>confirmBox('¿Borrar la curva de risas y las sugerencias de este pase? Las notas que pusiste se conservan.','Borrar risas',()=>{delete p.curva;p.editado=now();Store.put('pases',p);renderSetD();toast('Risas borradas')});
+  $('#vaX').onclick=()=>confirmBox('¿Borrar esta actuación con sus notas, risas y grabación?','Borrar',async()=>{if(p.grab){await IDB.del('grab:'+p.id);if(p.grab.driveId)Store.tomb['drv:'+p.grab.driveId]=now()}delete S.pases[p.id];Store.del('pases',p.id);renderAll()});
+  if($('#vaDelR'))$('#vaDelR').onclick=()=>confirmBox('¿Borrar la curva de risas y las sugerencias de este pase? Las notas que pusiste se conservan.','Borrar risas',()=>{delete p.curva;p.editado=now();Store.put('pases',p);renderAll();toast('Risas borradas')});
   if($('#vaDel'))$('#vaDel').onclick=()=>confirmBox('¿Borrar la grabación de este pase? Las notas se conservan.','Borrar grabación',async()=>{
-    await IDB.del('grab:'+p.id);if(p.grab.driveId){Store.tomb['drv:'+p.grab.driveId]=now()}delete p.grab;p.editado=now();Store.put('pases',p);renderSetD();toast('Grabación borrada')});
+    await IDB.del('grab:'+p.id);if(p.grab.driveId){Store.tomb['drv:'+p.grab.driveId]=now()}delete p.grab;p.editado=now();Store.put('pases',p);renderAll();toast('Grabación borrada')});
   // grabación
   if(p.grab){const blob=await getGrab(p);if(blob){const u=URL.createObjectURL(blob);$('#vaMedia').innerHTML=p.grab.tipo==='video'?`<video id="vaM" src="${u}" controls playsinline style="width:100%;border-radius:10px;margin-bottom:10px;background:#000"></video>`:`<audio id="vaM" src="${u}" controls style="width:100%;margin-bottom:10px"></audio>`}
     else $('#vaMedia').innerHTML=`<div class="s" style="margin-bottom:10px">La grabación está en otro aparato${p.grab.driveId?' o en Drive (conecta Google para escucharla)':''}.</div>`}
@@ -1104,7 +1163,7 @@ async function verAnalisis(pid,nuevo){
   if($('#vaCv'))$('#vaCv').onclick=e=>{const m=$('#vaM');if(!m||!p.curva)return;const r=e.target.getBoundingClientRect();m.currentTime=(e.clientX-r.left)/r.width*(p.curva.L.length/(p.curva.hz||5));m.play()};
   if($('#vaM'))$('#vaM').ontimeupdate=()=>drawCurva($('#vaCv'),p,sens,$('#vaM').currentTime);
   $('#vaP').onclick=()=>{let sug=null;if(p.curva){p.curva.sens=sens;S.cfg.sensRisa=sens;sug={};const {res}=resumenRisas(p,sens);Object.entries(res).forEach(([id,r])=>sug[id]=r.sug)}
-    puntuar(s,nuevo?sug:null)};
+    puntuarPase(p,nuevo?sug:null)};
 }
 async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
@@ -1209,6 +1268,53 @@ function hSoon(){clearTimeout(H.t);H.t=setTimeout(hPush,600)}
 function hGo(d){if(H.t)hPush();const j=H.i+d;if(j<0||j>=H.st.length)return;H.i=j;ed.innerHTML=H.st[j].h;hydrateImgs(ed);ed.focus({preventScroll:true});setCaretOff(H.st[j].c);scheduleSave();updateStats();hBtns()}
 function hBtns(){const u=$('#fmtBar [data-f="undo"]'),r=$('#fmtBar [data-f="redo"]');if(u)u.style.opacity=H.i>0||H.t?1:.35;if(r)r.style.opacity=H.i<H.st.length-1?1:.35}
 
+/* ============ marca, pantalla de carga e inicio ============ */
+function uGlyph(u,m,g){return `<g><rect x="78" y="40" width="44" height="74" rx="22" fill="${m}"/><path d="M86 62h28M86 76h28M86 90h28" stroke="${g}" stroke-width="4" stroke-linecap="round"/><path d="M58 34V94a42 42 0 0 0 84 0V34" fill="none" stroke="${u}" stroke-width="14" stroke-linecap="round"/><path d="M100 136v26M78 164h44" stroke="${u}" stroke-width="14" stroke-linecap="round"/></g>`}
+function wordmark(h,color,acc){const k=h/100;
+  return `<svg height="${h}" viewBox="0 -14 500 110" style="display:block;max-width:100%" aria-label="stand UPP comedy"><text x="234" y="73" text-anchor="end" font-family="Inter,sans-serif" font-weight="600" font-size="78" letter-spacing="-2" fill="${color}">stand</text><g transform="translate(217.9 -17) scale(0.6293)">${uGlyph(acc,color,acc)}</g><text x="319.7" y="73" font-family="Inter,sans-serif" font-weight="800" font-size="100" letter-spacing="-1" fill="${acc}">PP</text></svg>`}
+function escenarioSVG(){return `<svg viewBox="0 0 400 120" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block" aria-label="Escenario de stand-up">
+ <defs><pattern id="brk" width="40" height="20" patternUnits="userSpaceOnUse"><rect width="40" height="20" fill="#2a1517"/><rect x="1" y="1" width="38" height="8" rx="1" fill="#4a2124"/><rect x="-19" y="11" width="38" height="8" rx="1" fill="#43201f"/><rect x="21" y="11" width="38" height="8" rx="1" fill="#4d2326"/></pattern>
+ <radialGradient id="foco" cx="50%" cy="45%" r="45%"><stop offset="0" stop-color="#fff3d6" stop-opacity=".55"/><stop offset=".55" stop-color="#ffcf8a" stop-opacity=".18"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+ <linearGradient id="osc" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".85"/></linearGradient>
+ <linearGradient id="lados" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".9"/><stop offset=".3" stop-color="#000" stop-opacity="0"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".9"/></linearGradient></defs>
+ <rect width="400" height="120" fill="url(#brk)"/><rect width="400" height="120" fill="url(#foco)"/><rect width="400" height="120" fill="url(#lados)"/>
+ <rect y="96" width="400" height="24" fill="#120a0b"/><ellipse cx="200" cy="99" rx="70" ry="6" fill="#fff3d6" opacity=".18"/>
+ <g fill="#0a0607"><rect x="198.5" y="46" width="3" height="52"/><path d="M186 99h28l-3-3h-22z"/><rect x="195" y="38" width="10" height="12" rx="5" transform="rotate(-18 200 44)"/>
+  <rect x="226" y="72" width="22" height="3" rx="1"/><rect x="228" y="75" width="2.5" height="24"/><rect x="243.5" y="75" width="2.5" height="24"/><rect x="229" y="88" width="16" height="2"/></g>
+ <rect width="400" height="120" fill="url(#osc)" opacity=".35"/></svg>`}
+function splash(){const d=document.createElement('div');d.id='splash';
+  d.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:22px;padding:24px;text-align:center">
+    <svg width="104" height="104" viewBox="0 0 200 200" aria-hidden="true"><rect width="200" height="200" rx="46" fill="#FF3E8E"/><g transform="translate(0 2)">${uGlyph('#FFFFFF','#0E0D10','#FF3E8E')}</g></svg>
+    <div>${wordmark(64,'#F5F2F6','#FF3E8E')}<div style="color:#9C95A3;font-size:13px;font-weight:600;letter-spacing:10px;margin:2px 0 0 10px">COMEDY</div></div>
+    <div style="color:#D6D0DA;font-size:15px;max-width:300px;line-height:1.45">Escribe, ordena, ensaya y prueba tus monólogos.</div></div>
+   <div style="position:absolute;bottom:28px;left:0;right:0;text-align:center;color:#6d6574;font-size:12px">Una app de <b style="color:#9C95A3">Oscar Revilla Díez</b></div>`;
+  document.body.appendChild(d);setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),450)},1700)}
+async function renderIni(){
+  const foto=S.fotoInicio;$('#iniBand').innerHTML=foto?`<img src="${foto}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`:escenarioSVG();
+  $('#iniLogo').innerHTML=wordmark(40,S.cfg.tema==='light'?'#1A171C':'#F5F2F6',S.cfg.tema==='light'?'#D81E68':'#FF3E8E');
+  const T=Object.values(S.textos),cerr=T.filter(t=>t.estado==='cerrado'),rep=cerr.reduce((a,t)=>a+minOf(statsOf(t)),0),pend=T.reduce((a,t)=>a+((t.stats&&t.stats.pend)||0),0);
+  const hoy=hoyISO(),prox=Object.values(S.setlists).filter(s=>s.fecha&&s.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha))[0];
+  const ult=T.sort((a,b)=>b.editado-a.editado).slice(0,3),ses=Object.values(S.pases).sort((a,b)=>(b.creado||0)-(a.creado||0))[0];
+  const h=new Date().getHours();
+  $('#iniBody').innerHTML=`
+   <div class="s" style="margin:2px 0 14px">${h<6?'Buenas noches':h<14?'Buenos días':h<21?'Buenas tardes':'Buenas noches'} · ${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+     ${[['idea','+ Idea','Apunta algo rápido'],['texto','Nuevo texto','Escribe en la Mesa'],['ensayo','Ensayar','Modo escenario'],['sets','Setlists','Prepara un show']].map(([k,t,d])=>`<button class="card" data-q="${k}" style="text-align:left;margin:0;${k==='idea'?'border-color:var(--pink)':''}"><div class="t" style="${k==='idea'?'color:var(--pink)':''}">${t}</div><div class="s" style="margin-top:3px">${d}</div></button>`).join('')}
+   </div>
+   ${prox?`<div class="lbl">Próximo show</div><div class="card" data-set="${prox.id}" style="cursor:pointer;border-color:rgba(255,62,142,.45)"><div class="row"><div class="t">${esc(prox.nombre||'Setlist')}</div><span class="st-chip e-cerrado">${prox.fecha===hoy?'Hoy':fechaCorta(prox.fecha)}</span></div><div class="s" style="margin-top:4px">${esc(prox.local||'Sin local')} · ${(prox.items||[]).length} textos · ${durTxt(setDur(prox))} de ${prox.maxMin}:00</div></div>`:''}
+   <div class="lbl">Tu material</div>
+   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px">
+     ${[[Object.keys(S.ideas).length,'ideas'],[T.length,'textos'],[durTxt(rep),'min cerrados'],[pend,'pendientes']].map(([n,l])=>`<div class="stat" style="padding:10px 8px;text-align:center"><b style="font-size:19px">${n}</b><span class="s" style="font-size:11px">${l}</span></div>`).join('')}
+   </div>
+   ${ult.length?`<div class="lbl">Últimos textos</div>${ult.map(t=>`<div class="card row" data-t="${t.id}" style="cursor:pointer;padding:11px 13px"><span class="t" style="font-size:14px">${esc(t.titulo||'Sin título')}</span>${estChip(t.estado)}</div>`).join('')}`:''}
+   ${ses?`<div class="lbl">Última sesión en Escenario</div><div class="card" data-p="${ses.id}" style="cursor:pointer"><div class="row"><div class="t" style="font-size:14px">${esc(paseNombre(ses))}</div><span class="st-chip ${paseTipo(ses)==='ensayo'?'e-borrador':'e-cerrado'}">${paseTipo(ses)==='ensayo'?'Ensayo':'Actuación'}</span></div><div class="s" style="margin-top:4px">${fechaCorta(ses.fecha)} · ${mmss(ses.duracion||0)}${mediaPase(ses)!=null?' · ★ '+mediaPase(ses).toFixed(1).replace('.',','):''}</div></div>`:''}
+   ${!T.length&&!Object.keys(S.ideas).length?'<div class="empty" style="padding:24px 10px">Empieza apuntando una idea o escribiendo tu primer texto.</div>':''}`;
+  $$('#iniBody [data-q]').forEach(b=>b.onclick=()=>{const k=b.dataset.q;if(k==='idea'){go('vLib');setTimeout(()=>$('#qText').focus(),60)}else if(k==='texto'){go('vMesa');$('#newText').click()}else if(k==='ensayo'){S.cfg.escModoUso='ensayo';go('vSes');$('#newSes').click()}else go('vSet')});
+  $$('#iniBody [data-set]').forEach(b=>b.onclick=()=>openSet(b.dataset.set));
+  $$('#iniBody [data-t]').forEach(b=>b.onclick=()=>openEditor(b.dataset.t));
+  $$('#iniBody [data-p]').forEach(b=>b.onclick=()=>{go('vSes');abrirSesion(b.dataset.p)});
+}
+
 /* ============ editor de estilos ============ */
 function editStyle(id){
   const orig=id?styleById(id):null;
@@ -1249,7 +1355,7 @@ function editStyle(id){
 }
 
 /* ============ arranque ============ */
-applyTheme();buildStyleCSS();renderAll();Store.init();
+splash();applyTheme();buildStyleCSS();go('vIni');Store.init();
 /* app instalable */
 let deferredInstall=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installCard').style.display='block'});
