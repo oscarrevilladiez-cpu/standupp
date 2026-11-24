@@ -10,8 +10,8 @@ const CLAVE_SECRETA_PAYHIP = 'PEGA_AQUI_LA_CLAVE';
 //    Ejemplo: ['OSCAR-2026', 'PALOMA-RISAS']   (déjalo así [] si no quieres ninguno)
 const CODIGOS_REGALO = ['OSCAR-AUTOR'];
 
-// Cuántos aparatos puede activar cada licencia (móvil + PC + tablet)
-const MAX_APARATOS = 3;
+// Cuántos aparatos puede activar cada licencia (por ejemplo, móvil y PC)
+const MAX_APARATOS = 2;
 
 /* ---------- a partir de aquí no hace falta tocar nada ---------- */
 const API = 'https://payhip.com/api/v2/license/';

@@ -1195,7 +1195,7 @@ async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
 /* ============ licencia (Payhip a través del comprobador en Google Apps Script) ============ */
 const LIC_URL_FIJA='';            // dirección /exec del comprobador (Apps Script)
 const LIC_TIENDA='https://payhip.com/b/mclbx';
-const LIC_PRUEBA_DIAS=14;
+const LIC_PRUEBA_DIAS=7;
 const LIC={st:null,url:()=>{try{return localStorage.getItem('licTest')||LIC_URL_FIJA}catch(e){return LIC_URL_FIJA}},
  async init(){if(!this.url())return;
   let pu=await IDB.get('primerUso');if(!pu){pu=now();await IDB.set('primerUso',pu)}this.primer=pu;
@@ -1207,7 +1207,7 @@ const LIC={st:null,url:()=>{try{return localStorage.getItem('licTest')||LIC_URL_
  activa(){return !this.url()||!!(this.st&&this.st.ok)},
  async llamar(accion,clave){const u=this.url()+(this.url().includes('?')?'&':'?')+'accion='+accion+'&clave='+encodeURIComponent(clave)+'&aparato='+encodeURIComponent(this.aparato);
   const r=await fetch(u,{redirect:'follow'});return await r.json()},
- motivo(r){return {no_existe:'Ese código no existe. Revisa que esté copiado entero (con los guiones).',desactivada:'Esa licencia está desactivada (devolución o anulación).',limite:`Esa licencia ya está usada en ${r.max||3} aparatos. Desactívala en alguno desde Ajustes → Licencia.`,sin_clave:'Escribe el código.',no_activada:'La licencia no está activada en este aparato.'}[r.motivo]||'No se ha podido comprobar ('+(r.motivo||'error')+').'},
+ motivo(r){return {no_existe:'Ese código no existe. Revisa que esté copiado entero (con los guiones).',desactivada:'Esa licencia está desactivada (devolución o anulación).',limite:`Esa licencia ya está usada en ${r.max||2} aparatos. Desactívala en alguno desde Ajustes → Licencia.`,sin_clave:'Escribe el código.',no_activada:'La licencia no está activada en este aparato.'}[r.motivo]||'No se ha podido comprobar ('+(r.motivo||'error')+').'},
  async activar(clave){clave=clave.trim();if(!clave)throw new Error('Escribe el código');
   const r=await this.llamar('activar',clave);if(!r.ok)throw new Error(this.motivo(r));
   this.st={ok:true,clave,quien:r.quien||'',activada:now(),revisado:now()};await IDB.set('lic',this.st);return r},
@@ -1234,8 +1234,8 @@ function renderLic(){const c=$('#licCard');if(!c)return;if(!LIC.url()){c.style.d
   const st=LIC.st;
   $('#licBox').innerHTML=st&&st.ok?`<div class="s" style="line-height:1.5"><span style="color:var(--green)">✓ Licencia activada</span> en este aparato${st.quien?' · '+esc(st.quien):''}<br>Código ••••${esc(st.clave.slice(-5))}</div>
      <button class="btn ghost sm" id="licX" style="width:100%;margin-top:10px">Desactivar en este aparato</button>
-     <div class="s" style="margin-top:6px">Úsalo si cambias de móvil u ordenador: libera el hueco para el aparato nuevo (máximo 3).</div>`
-   :`<div class="s" style="line-height:1.5;margin-bottom:10px">${LIC.diasRestantes()>0?`Prueba gratuita: te quedan <b>${LIC.diasRestantes()} días</b>.`:'La prueba gratuita ha terminado.'} La licencia individual sirve para 3 aparatos tuyos.</div>
+     <div class="s" style="margin-top:6px">Úsalo si cambias de móvil u ordenador: libera el hueco para el aparato nuevo (máximo 2).</div>`
+   :`<div class="s" style="line-height:1.5;margin-bottom:10px">${LIC.diasRestantes()>0?`Prueba gratuita: te quedan <b>${LIC.diasRestantes()} días</b>.`:'La prueba gratuita ha terminado.'} La licencia individual sirve para 2 aparatos tuyos (por ejemplo, móvil y ordenador).</div>
      <div class="row"><input id="licK" placeholder="Código de licencia" style="flex:1"><button class="btn sm" id="licA">Activar</button></div>
      <div id="licE" class="s" style="margin-top:8px"></div>
      <a href="${LIC_TIENDA}" target="_blank" rel="noopener" class="btn ghost sm" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Conseguir licencia</a>`;
