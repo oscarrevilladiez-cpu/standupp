@@ -120,6 +120,13 @@ input:focus,textarea:focus{border-color:var(--pink)}
   .edwrap{padding:30px 40px 160px}
 }
 #licGate{position:fixed;inset:0;z-index:900;background:var(--bg);overflow:auto}
+.msel{width:auto;padding:6px 10px;font-size:12.5px;flex:1 1 40%;min-width:0}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.ftile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:left;display:flex;gap:10px;align-items:center;cursor:pointer;color:var(--text)}
+.ftile svg{flex:none;color:var(--pink)}
+.ftile.new{border-style:dashed;color:var(--mute)}
+.ftile.new svg{color:var(--mute)}
+#ajTabs{margin-bottom:14px}
 </style>
 <style id="stylesCSS"></style>
 </head>
@@ -129,7 +136,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
   <!-- LIBRETA -->
   <section class="view on" id="vIni" style="padding-top:0">
     <div id="iniBand"></div>
-    <div class="row" style="padding:14px 0 4px"><div id="iniLogo" style="min-width:0"></div><button class="ib" id="iniAj" aria-label="Ajustes" style="color:var(--mute)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+    <div class="row" style="padding:14px 0 4px"><div id="iniLogo" style="min-width:0"></div><button class="ib" id="iniAj" aria-label="Ajustes" style="color:var(--mute)"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div>
     <div id="iniBody"></div>
   </section>
 
@@ -157,9 +164,17 @@ input:focus,textarea:focus{border-color:var(--pink)}
   <!-- MESA -->
   <section class="view" id="vMesa">
     <div class="top"><h2>Mesa</h2><div style="display:flex;gap:8px;align-items:center"><div class="seg" style="width:auto"><button class="on" style="padding:6px 10px">Lista</button><button data-goto="vTab" style="padding:6px 10px">Columnas</button></div><button class="btn sm" id="newText">+ Nuevo</button></div></div>
-    <input id="mSearch" placeholder="Buscar en títulos, textos y etiquetas…" style="margin-bottom:10px">
+    <div id="mHead"></div>
+    <input id="mSearch" placeholder="Buscar en títulos, textos y etiquetas…" style="margin-bottom:8px">
+    <div id="mScope"></div>
     <div id="mFilters" style="margin-bottom:8px"></div>
-    <div class="row" style="margin-bottom:10px"><span class="s">Ordenar</span><select id="mSort" style="width:auto;padding:6px 10px;font-size:12.5px"><option value="rec">Más reciente</option><option value="nota">Mejor nota</option><option value="mas">Más probado</option><option value="menos">Menos probado</option><option value="dur">Más largo</option></select></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      <select id="mTag" class="msel"></select>
+      <select id="mCat" class="msel"></select>
+      <select id="mFecha" class="msel"><option value="">Cualquier fecha</option><option value="7">Última semana</option><option value="30">Último mes</option><option value="90">Últimos 3 meses</option><option value="365">Último año</option></select>
+      <select id="mSort" class="msel"><option value="rec">Más reciente</option><option value="nota">Mejor nota</option><option value="mas">Más probado</option><option value="menos">Menos probado</option><option value="dur">Más largo</option><option value="az">A → Z</option></select>
+    </div>
+    <div id="mFolders"></div>
     <div id="mList"></div>
   </section>
 
@@ -196,41 +211,55 @@ input:focus,textarea:focus{border-color:var(--pink)}
   <!-- AJUSTES -->
   <section class="view" id="vAj">
     <div class="top"><div style="display:flex;align-items:center;gap:4px"><button class="ib" id="ajBack" aria-label="Volver"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h2>Ajustes</h2></div></div>
+    <div class="seg" id="ajTabs"><button data-t="g">General</button><button data-t="t">De trabajo</button></div>
+    <div id="ajG">
     <div class="card">
-      <div class="lbl" style="margin-top:0">Imagen de inicio</div>
+      <div class="lbl" style="margin-top:0">Foto de inicio</div>
       <div class="s" style="margin-bottom:10px;line-height:1.5">La franja de arriba de la pantalla de Inicio. Puedes poner una foto tuya de un escenario <b>(tamaño recomendado 1400 × 470 px)</b>. Se recorta por el centro: deja lo importante en medio.</div>
       <div class="row"><button class="btn ghost sm" id="fiCam" style="flex:1">Poner mi foto</button><button class="btn ghost sm" id="fiDel" style="flex:1">Usar la ilustración</button></div>
       <input type="file" id="fiFile" accept="image/*" hidden>
-    </div>
-    <div class="card">
-      <div class="lbl" style="margin-top:0">Apariencia</div>
-      <div class="seg" id="themeSeg"><button data-v="dark">Oscuro</button><button data-v="light">Claro</button></div>
-    </div>
-    <div class="card">
-      <div class="row"><div class="lbl" style="margin:0">Estilos</div><button class="btn sm" id="newStyle">+ Nuevo estilo</button></div>
-      <div class="s" style="margin:6px 0 8px">Título del bloque, Remate y Acting siempre existen. Pulsa uno para editarlo.</div>
-      <div id="styleList"></div>
-    </div>
-    <div class="card">
-      <div class="lbl" style="margin-top:0">Dónde se guarda</div>
-      <div class="s" id="storeInfo" style="line-height:1.5"></div>
-    </div>
-    <div class="card">
-      <div class="lbl" style="margin-top:0">Copia de seguridad</div>
-      <div class="s" style="margin-bottom:10px;line-height:1.5">Copia todo tu material (sin fotos) como texto, o pega una copia para restaurarla. Para traer lo que escribiste en el prototipo: allí pulsa «Copiar copia» y aquí «Restaurar».</div>
-      <div class="row"><button class="btn ghost sm" id="bkCopy" style="flex:1">Copiar copia</button><button class="btn ghost sm" id="bkRestore" style="flex:1">Restaurar…</button></div>
     </div>
     <div class="card" id="licCard" style="display:none">
       <div class="lbl" style="margin-top:0">Licencia</div>
       <div id="licBox"></div>
     </div>
     <div class="card">
+      <div class="lbl" style="margin-top:0">Conectar con Google · dónde se guarda</div>
+      <div class="s" id="storeInfo" style="line-height:1.5"></div>
+    </div>
+    <div class="card">
       <div class="lbl" style="margin-top:0">Inteligencia artificial (opcional)</div>
       <div id="iaBox"></div>
     </div>
     <div class="card">
+      <div class="lbl" style="margin-top:0">Copia de seguridad</div>
+      <div class="s" style="margin-bottom:10px;line-height:1.5">Copia todo tu material (sin fotos) como texto, o pega una copia para restaurarla. Para traer lo que escribiste en el prototipo: allí pulsa «Copiar copia» y aquí «Restaurar».</div>
+      <div class="row"><button class="btn ghost sm" id="bkCopy" style="flex:1">Copiar copia</button><button class="btn ghost sm" id="bkRestore" style="flex:1">Restaurar…</button></div>
+    </div>
+    <div class="card">
+      <div class="lbl" style="margin-top:0">Apariencia</div>
+      <div class="seg" id="themeSeg"><button data-v="dark">Oscuro</button><button data-v="light">Claro</button></div>
+    </div>
+    <div class="card">
+      <div class="lbl" style="margin-top:0">Grabaciones de los pases</div>
+      <div class="s" style="margin-bottom:10px;line-height:1.5">Se guardan en este aparato. ¿Cuándo subirlas a tu Drive (carpeta Grabaciones)?</div>
+      <div class="seg" id="upSeg"><button data-v="wifi">Solo con wifi</button><button data-v="siempre">Siempre</button><button data-v="nunca">No subir</button></div>
+    </div>
+    <div class="card" id="installCard" style="display:none">
+      <div class="lbl" style="margin-top:0">Instalar</div>
+      <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
+      <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
+    </div>
+    </div>
+    <div id="ajT">
+    <div class="card">
       <div class="lbl" style="margin-top:0">Objetivos y rachas</div>
       <div id="objBox"></div>
+    </div>
+    <div class="card">
+      <div class="row"><div class="lbl" style="margin:0">Estilos de texto</div><button class="btn sm" id="newStyle">+ Nuevo estilo</button></div>
+      <div class="s" style="margin:6px 0 8px">Título del bloque, Remate y Acting siempre existen. Pulsa uno para editarlo.</div>
+      <div id="styleList"></div>
     </div>
     <div class="card">
       <div class="lbl" style="margin-top:0">Tu velocidad al hablar</div>
@@ -244,17 +273,8 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px;line-height:1.5">Todas tus etiquetas y cuántas veces se usan. Toca una para cambiarle el nombre, unirla con otra parecida o quitarla.</div>
       <div id="tagMgr"></div>
     </div>
-    <div class="card">
-      <div class="lbl" style="margin-top:0">Grabaciones de los pases</div>
-      <div class="s" style="margin-bottom:10px;line-height:1.5">Se guardan en este aparato. ¿Cuándo subirlas a tu Drive (carpeta Grabaciones)?</div>
-      <div class="seg" id="upSeg"><button data-v="wifi">Solo con wifi</button><button data-v="siempre">Siempre</button><button data-v="nunca">No subir</button></div>
     </div>
-    <div class="card" id="installCard" style="display:none">
-      <div class="lbl" style="margin-top:0">Instalar</div>
-      <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
-      <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
-    </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.2</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.3</div>
   </section>
 
   <!-- EDITOR -->
@@ -510,7 +530,7 @@ function go(v){
   S.view=v;$$('.view').forEach(x=>x.classList.toggle('on',x.id===v));
   $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===({vSetD:'vSet',vTab:'vMesa'}[v]||v)));
   const ed=v==='vEd',esc_=v==='vEsc';$('#nav').style.display=ed||esc_?'none':'flex';$('#bars').style.display=ed?'block':'none';
-  $('#fab').style.display=(v==='vLib'||v==='vMesa'||v==='vTab')?'block':'none';if(v!=='vAj')S.ajDesde=v;if(v==='vSetD')renderSetD();
+  $('#fab').style.display=v==='vLib'?'block':'none';if(v!=='vAj')S.ajDesde=v;if(v==='vSetD')renderSetD();
   if(!ed)renderAll();
 }
 $$('#nav button').forEach(b=>b.onclick=()=>{if(b.dataset.v==='vSes')S.sesFiltro=null;go(b.dataset.v)});
@@ -589,24 +609,70 @@ $('#qFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;qFoto=awai
 function shrink(file,max=1000,q=.72){return new Promise(res=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{let w=im.width,h=im.height;const k=Math.min(1,max/Math.max(w,h));w=Math.round(w*k);h=Math.round(h*k);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(im,0,0,w,h);let d=c.toDataURL('image/jpeg',q);if(d.length>240000)d=c.toDataURL('image/jpeg',.5);res(d)};im.src=r.result};r.readAsDataURL(file)})}
 
 /* --- Mesa --- */
-function newTexto(titulo){const t={id:uid(),titulo:titulo||'',estado:'borrador',etiquetas:[],categoria:'Chiste',html:'<p><br></p>',creado:now(),editado:now(),stats:null};S.textos[t.id]=t;return t}
+const ICO_CARP='<svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6l2 2.2h8.4A1.5 1.5 0 0 1 21 8.7v9.8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+const carpetas=()=>(S.cfg.carpetas=S.cfg.carpetas||[]);
+const carpeta=id=>carpetas().find(c=>c.id===id);
+function newTexto(titulo){const t={id:uid(),titulo:titulo||'',estado:'borrador',etiquetas:[],categoria:'Chiste',html:'<p><br></p>',creado:now(),editado:now(),stats:null};if(S.view==='vMesa'&&S.mCarpeta&&carpeta(S.mCarpeta))t.carpeta=S.mCarpeta;S.textos[t.id]=t;return t}
 $('#newText').onclick=()=>{const t=newTexto('');Store.put('textos',t);openEditor(t.id,true)};
-$('#mSearch').oninput=renderMesa;$('#mSort').onchange=renderMesa;
+['mSearch'].forEach(i=>$('#'+i).oninput=renderMesa);['mSort','mTag','mCat','mFecha'].forEach(i=>$('#'+i).onchange=renderMesa);
 function mesaSort(){const k=$('#mSort').value;const np=id=>pasesDe(id).length;
+  if(k==='az')return (a,b)=>(a.titulo||'').localeCompare(b.titulo||'','es');
   if(k==='nota')return (a,b)=>(notaMedia(b.id)??-1)-(notaMedia(a.id)??-1);if(k==='mas')return (a,b)=>np(b.id)-np(a.id);if(k==='menos')return (a,b)=>np(a.id)-np(b.id);if(k==='dur')return (a,b)=>minOf(statsOf(b))-minOf(statsOf(a));return (a,b)=>b.editado-a.editado}
+function pedirNombre(titulo,ini,fn){openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:10px">${esc(titulo)}</div><input id="pnI" value="${esc(ini||'')}" placeholder="Nombre de la carpeta"><div class="row" style="margin-top:12px"><button class="btn ghost" style="flex:1" id="pnN">Cancelar</button><button class="btn" style="flex:1" id="pnY">Guardar</button></div>`);
+  const i=$('#pnI');setTimeout(()=>i.focus(),60);const ok=()=>{const v=i.value.trim();if(!v)return toast('Escribe un nombre');closeSheet();fn(v)};$('#pnY').onclick=ok;i.onkeydown=e=>{if(e.key==='Enter')ok()};$('#pnN').onclick=closeSheet}
+function nuevaCarpeta(cb){pedirNombre('Nueva carpeta','',n=>{const c={id:'c'+uid(),nombre:n,creado:now()};carpetas().push(c);Store.cfg();cb?cb(c):renderMesa();toast('Carpeta creada')})}
+function moverTexto(t,cb){const cs=carpetas();
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:4px">Mover a carpeta</div><div class="s" style="margin-bottom:10px">${esc(t.titulo||'Sin título')}</div>
+   <button class="ftile" data-c="" style="width:100%;margin-bottom:8px">${ICO_CARP}<span>Suelto en la Mesa (sin carpeta)</span>${!t.carpeta?'<b style="margin-left:auto;color:var(--pink)">✓</b>':''}</button>
+   ${cs.map(c=>`<button class="ftile" data-c="${c.id}" style="width:100%;margin-bottom:8px">${ICO_CARP}<span>${esc(c.nombre)}</span>${t.carpeta===c.id?'<b style="margin-left:auto;color:var(--pink)">✓</b>':''}</button>`).join('')}
+   <button class="ftile new" id="mvNew" style="width:100%">${ICO_CARP}<span>+ Nueva carpeta</span></button>`);
+  $$('#sheet [data-c]').forEach(b=>b.onclick=()=>{t.carpeta=b.dataset.c||null;if(!t.carpeta)delete t.carpeta;t.editado=now();Store.put('textos',t);closeSheet();cb?cb():renderMesa();toast(t.carpeta?'Movido a «'+carpeta(t.carpeta).nombre+'»':'Movido a la Mesa')});
+  $('#mvNew').onclick=()=>nuevaCarpeta(c=>{t.carpeta=c.id;t.editado=now();Store.put('textos',t);cb?cb():renderMesa()})}
 function renderMesa(){
-  const f=S.mFilter,q=$('#mSearch').value.trim().toLowerCase();
+  const f=S.mFilter,q=$('#mSearch').value.trim().toLowerCase(),cs=carpetas();
+  if(S.mCarpeta&&!carpeta(S.mCarpeta))S.mCarpeta=null;
+  const dentro=S.mCarpeta,scope=dentro?(S.mScope||'aqui'):'todo';
+  const todos=Object.values(S.textos);
+  // cabecera de carpeta
+  $('#mHead').innerHTML=dentro?`<div class="row" style="margin-bottom:10px"><button class="row" id="mUp" style="gap:6px;color:var(--mute);font-size:13.5px"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>Mesa</button>
+     <span style="display:flex;gap:6px"><button class="btn ghost sm" id="mRen">Renombrar</button><button class="btn ghost sm" id="mDelC">Borrar</button></span></div>
+     <div class="row" style="justify-content:flex-start;gap:10px;margin-bottom:12px;color:var(--pink)">${ICO_CARP}<span class="t" style="font-size:19px;color:var(--text)">${esc(carpeta(dentro).nombre)}</span></div>`:'';
+  if(dentro){$('#mUp').onclick=()=>{S.mCarpeta=null;S.mScope='aqui';renderMesa()};
+    $('#mRen').onclick=()=>pedirNombre('Renombrar carpeta',carpeta(dentro).nombre,n=>{carpeta(dentro).nombre=n;Store.cfg();renderMesa()});
+    $('#mDelC').onclick=()=>confirmBox('¿Borrar la carpeta «'+carpeta(dentro).nombre+'»? Sus textos no se borran: vuelven sueltos a la Mesa.','Borrar carpeta',()=>{todos.filter(t=>t.carpeta===dentro).forEach(t=>{delete t.carpeta;t.editado=now();Store.put('textos',t)});S.cfg.carpetas=cs.filter(c=>c.id!==dentro);Store.cfg();S.mCarpeta=null;renderMesa()})}
+  $('#mSearch').placeholder=dentro&&scope==='aqui'?'Buscar en esta carpeta…':'Buscar en toda la Mesa: títulos, textos, etiquetas…';
+  $('#mScope').innerHTML=dentro?`<div class="seg" style="margin-bottom:10px"><button data-s="aqui" class="${scope==='aqui'?'on':''}">En esta carpeta</button><button data-s="todo" class="${scope==='todo'?'on':''}">En toda la Mesa</button></div>`:'';
+  $$('#mScope button').forEach(b=>b.onclick=()=>{S.mScope=b.dataset.s;renderMesa()});
+  // filtros
+  const tagsAll=[...new Set(todos.flatMap(t=>t.etiquetas||[]))].sort((a,b)=>a.localeCompare(b,'es'));
+  const tv=$('#mTag').value;$('#mTag').innerHTML='<option value="">Todas las etiquetas</option>'+tagsAll.map(t=>`<option ${t===tv?'selected':''}>${esc(t)}</option>`).join('');
+  const cv=$('#mCat').value;$('#mCat').innerHTML='<option value="">Todos los tipos</option>'+CATS.map(c=>`<option ${c===cv?'selected':''}>${c}</option>`).join('');
   $('#mFilters').innerHTML=[['todos','Todos'],...ESTADOS].map(([k,l])=>`<button class="chip ${f===k?'on':''}" data-f="${k}">${l}</button>`).join('');
   $$('#mFilters .chip').forEach(c=>c.onclick=()=>{S.mFilter=c.dataset.f;renderMesa()});
-  const list=Object.values(S.textos).filter(t=>(f==='todos'?t.estado!=='cementerio':t.estado===f)).filter(t=>!q||(t.titulo+' '+(t.etiquetas||[]).join(' ')+' '+strip(t.html)).toLowerCase().includes(q)).sort(mesaSort());
+  const tag=$('#mTag').value,cat=$('#mCat').value,dias=+$('#mFecha').value||0;
+  const buscando=!!(q||tag||cat||dias||f!=='todos');
+  let list=todos.filter(t=>(f==='todos'?t.estado!=='cementerio':t.estado===f))
+    .filter(t=>!tag||(t.etiquetas||[]).includes(tag)).filter(t=>!cat||t.categoria===cat).filter(t=>!dias||now()-t.editado<=dias*864e5)
+    .filter(t=>!q||(t.titulo+' '+(t.etiquetas||[]).join(' ')+' '+(t.categoria||'')+' '+(carpeta(t.carpeta)?.nombre||'')+' '+strip(t.html)).toLowerCase().includes(q));
+  if(dentro&&scope==='aqui')list=list.filter(t=>t.carpeta===dentro);
+  else if(!dentro&&!buscando)list=list.filter(t=>!carpeta(t.carpeta));
+  list.sort(mesaSort());
+  // carpetas (solo en la Mesa sin búsqueda)
+  const verCarp=!dentro&&!buscando;
+  $('#mFolders').innerHTML=verCarp?`<div class="fgrid">${cs.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre,'es')).map(c=>{const n=todos.filter(t=>t.carpeta===c.id&&t.estado!=='cementerio').length;return `<button class="ftile" data-c="${c.id}">${ICO_CARP}<span style="min-width:0"><span class="t" style="display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.nombre)}</span><span class="s">${n} texto${n===1?'':'s'}</span></span></button>`}).join('')}
+     <button class="ftile new" id="mNewC">${ICO_CARP}<span style="font-size:13.5px">Nueva carpeta</span></button></div>${cs.length?`<div class="lbl" style="margin:4px 0 8px">Sueltos en la Mesa</div>`:''}`
+   :(buscando&&(!dentro||scope==='todo')?`<div class="s" style="margin-bottom:8px">${list.length} resultado${list.length===1?'':'s'} en toda la Mesa (todas las carpetas)</div>`:'');
+  $$('#mFolders [data-c]').forEach(b=>b.onclick=()=>{S.mCarpeta=b.dataset.c;S.mScope='aqui';$('#mSearch').value='';renderMesa();window.scrollTo(0,0)});
+  if($('#mNewC'))$('#mNewC').onclick=()=>nuevaCarpeta();
+  const verChipCarp=!(dentro&&scope==='aqui');
   $('#mList').innerHTML=list.length?list.map(t=>`
     <div class="card" data-id="${t.id}" style="cursor:pointer">
-      <div class="row"><div class="t">${esc(t.titulo||'Sin título')}</div>${estChip(t.estado)}</div>
+      <div class="row"><div class="t">${esc(t.titulo||'Sin título')}</div><span style="display:flex;gap:6px;align-items:center">${estChip(t.estado)}<button class="ib" data-mv="${t.id}" aria-label="Mover a carpeta" style="width:30px;height:30px;color:var(--mute)">${ICO_CARP.replace(/22/g,'18')}</button></span></div>
       <div class="s" style="margin:6px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(strip(t.html).slice(0,160))||'Vacío'}</div>
-      <div class="row"><div>${(t.etiquetas||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div><div class="s" style="white-space:nowrap">${t.stats?`${t.stats.remates} rem · ${durTxt(minOf(t.stats))} · `:''}${fecha(t.editado)}</div></div>
+      <div class="row"><div>${verChipCarp&&carpeta(t.carpeta)?`<span class="chip" style="border-color:var(--pink);color:var(--pink)">📁 ${esc(carpeta(t.carpeta).nombre)}</span>`:''}${(t.etiquetas||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div><div class="s" style="white-space:nowrap">${t.stats?`${t.stats.remates} rem · ${durTxt(minOf(t.stats))} · `:''}${fecha(t.editado)}</div></div>
       <div class="row" style="margin-top:4px"><span class="s" style="color:var(--amber)">${t.stats&&t.stats.pend?`${t.stats.pend} pendiente${t.stats.pend>1?'s':''}`:''}</span>${notaChip(t.id)}</div>
-    </div>`).join(''):`<div class="empty">${q||f!=='todos'?'Nada coincide con la búsqueda.':'Aún no hay textos.<br>Crea uno nuevo o pasa una idea desde la Libreta.'}</div>`;
-  $$('#mList .card').forEach(c=>c.onclick=()=>openEditor(c.dataset.id));
+    </div>`).join(''):`<div class="empty">${buscando?'Nada coincide con la búsqueda.'+(dentro&&scope==='aqui'?'<br>Prueba «En toda la Mesa».':''):dentro?'Esta carpeta está vacía.<br>Crea un texto con «+ Nuevo» o mueve uno aquí con el icono de carpeta.':cs.length?'No hay textos sueltos: todos están en carpetas.':'Aún no hay textos.<br>Crea uno nuevo o pasa una idea desde la Libreta.'}</div>`;
+  $$('#mList .card').forEach(c=>c.onclick=e=>{const mv=e.target.closest('[data-mv]');if(mv){e.stopPropagation();return moverTexto(S.textos[mv.dataset.mv])}openEditor(c.dataset.id)});
 }
 const strip=h=>{const d=document.createElement('div');d.innerHTML=(h||'').replace(/<\/(p|li|div)>/g,' </$1>');return d.textContent.replace(/\s+/g,' ').trim()};
 const durTxt=m=>{const s=Math.round((m||0)*60);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
@@ -628,6 +694,7 @@ $('#fiCam').onclick=()=>$('#fiFile').click();
 $('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);S.fotoInicio=d;await IDB.set('fotoInicio',d);renderIni();toast('Imagen de inicio cambiada')};
 $('#fiDel').onclick=async()=>{S.fotoInicio=null;await IDB.del('fotoInicio');renderIni();toast('Vuelve la ilustración')};
 function renderAjustes(){
+  const tab=S.ajTab||'g';$$('#ajTabs button').forEach(b=>{b.classList.toggle('on',b.dataset.t===tab);b.onclick=()=>{S.ajTab=b.dataset.t;renderAjustes();$('#vAj').scrollTop=0;window.scrollTo(0,0)}});$('#ajG').style.display=tab==='g'?'':'none';$('#ajT').style.display=tab==='t'?'':'none';
   renderIA();renderLic();
   renderObjetivos();
   $('#ppmV').textContent=PPM();$('#ppmM').onclick=()=>setPPM(PPM()-5);$('#ppmP').onclick=()=>setPPM(PPM()+5);
@@ -792,6 +859,7 @@ $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
   openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:6px">Ficha del texto</div>
   <div class="lbl">Estado</div><div id="fE">${ESTADOS.map(([k,l])=>`<button class="chip ${t.estado===k?'on':''}" data-e="${k}">${l}</button>`).join('')}</div>
   <div class="lbl">Categoría</div><div id="fC">${CATS.map(c=>`<button class="chip ${t.categoria===c?'on':''}" data-c="${c}">${c}</button>`).join('')}</div>
+  <div class="lbl">Carpeta</div><button class="ftile" id="fCarp" style="width:100%">${ICO_CARP}<span>${esc(carpeta(t.carpeta)?.nombre||'Suelto en la Mesa (sin carpeta)')}</span><span class="s" style="margin-left:auto">Cambiar ›</span></button>
   <div class="lbl">Etiquetas</div><div id="fT"></div>
   <div class="lbl">Pases de este texto</div>${pasesDe(t.id).map(p=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:13px">${esc(p.local||'Sin local')} <span class="s">· ${fechaCorta(p.fecha)}</span></span>${starsTxt(p.notas[t.id])}</div>`).join('')||'<div class="s">Aún no se ha probado en ningún pase.</div>'}
   <div class="s" style="margin-top:14px">Creado ${fecha(t.creado)} · editado ${fecha(t.editado)}</div>
@@ -799,6 +867,7 @@ $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
   const est0=t.estado;const ftb=tagBox($('#fT'),t.etiquetas,()=>(t.titulo||'')+' '+strip(t.html));
   $$('#fE .chip').forEach(c=>c.onclick=()=>{t.estado=c.dataset.e;$$('#fE .chip').forEach(x=>x.classList.toggle('on',x===c))});
   $$('#fC .chip').forEach(c=>c.onclick=()=>{t.categoria=c.dataset.c;$$('#fC .chip').forEach(x=>x.classList.toggle('on',x===c))});
+  $('#fCarp').onclick=()=>{t.etiquetas=ftb.get();Store.put('textos',t);moverTexto(t,()=>$('#edInfo').click())};
   $('#fOk').onclick=()=>{marcaAvance(est0,t.estado);t.etiquetas=ftb.get();t.editado=now();Store.put('textos',t);closeSheet()};
   $('#fDel').onclick=()=>confirmBox('¿Borrar «'+(t.titulo||'Sin título')+'»? No se puede deshacer.','Borrar',()=>{delete S.textos[t.id];Store.del('textos',t.id);Object.values(S.ideas).forEach(i=>{if(i.pasada===t.id){delete i.pasada;Store.put('ideas',i)}});S.editing=null;go('vMesa')});
 };
