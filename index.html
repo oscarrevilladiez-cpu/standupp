@@ -127,6 +127,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
 .ftile.new{border-style:dashed;color:var(--mute)}
 .ftile.new svg{color:var(--mute)}
 #ajTabs{margin-bottom:14px}
+.pvdoc p,.pvdoc li{margin:0 0 .35em}.pvdoc img{max-width:100%}
 </style>
 <style id="stylesCSS"></style>
 </head>
@@ -261,6 +262,10 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div id="qBox"></div>
     </div>
     <div class="card">
+      <div class="lbl" style="margin-top:0">Formato de página</div>
+      <div id="pagBox"></div>
+    </div>
+    <div class="card">
       <div class="row"><div class="lbl" style="margin:0">Estilos de texto</div><button class="btn sm" id="newStyle">+ Nuevo estilo</button></div>
       <div class="s" style="margin:6px 0 8px">Título del bloque, Remate y Acting siempre existen. Pulsa uno para editarlo.</div>
       <div id="styleList"></div>
@@ -278,7 +283,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.4</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.5</div>
   </section>
 
   <!-- EDITOR -->
@@ -520,6 +525,7 @@ function buildStyleCSS(){
     if(s.marco==='subrayado')css+=`${sel}{text-decoration:underline dashed ${c};text-underline-offset:4px}`;
     if(s.antes)css+=`${sel}::before{content:${JSON.stringify(s.antes)}}`;if(s.despues)css+=`${sel}::after{content:${JSON.stringify(s.despues)}}`;
   });
+  {const tm=S.cfg.tema;S.cfg.tema='light';S.cfg.estilos.forEach(st=>{css+=`.pvdoc [data-st="${st.id}"]{color:${forTheme(st.color)}}`});S.cfg.tema=tm}
   $('#stylesCSS').textContent=css;
 }
 function applyTheme(){document.body.className=S.cfg.tema==='light'?'light':'dark';
@@ -699,7 +705,7 @@ $('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!
 $('#fiDel').onclick=async()=>{S.fotoInicio=null;await IDB.del('fotoInicio');renderIni();toast('Vuelve la ilustración')};
 function renderAjustes(){
   const tab=S.ajTab||'g';$$('#ajTabs button').forEach(b=>{b.classList.toggle('on',b.dataset.t===tab);b.onclick=()=>{S.ajTab=b.dataset.t;renderAjustes();$('#vAj').scrollTop=0;window.scrollTo(0,0)}});$('#ajG').style.display=tab==='g'?'':'none';$('#ajT').style.display=tab==='t'?'':'none';
-  renderIA();renderLic();renderQuemadoAj();
+  renderIA();renderLic();renderQuemadoAj();renderPagAj();
   renderObjetivos();
   $('#ppmV').textContent=PPM();$('#ppmM').onclick=()=>setPPM(PPM()-5);$('#ppmP').onclick=()=>setPPM(PPM()+5);
   const pm=ppmMedia();$('#ppmE').textContent=pm?`Calcular con mis ensayos (${pm.ppm} pal/min, media de ${pm.n})`:'Aún no hay ensayos: haz uno en Modo escenario → Ensayo';$('#ppmE').disabled=!pm;$('#ppmE').style.opacity=pm?1:.5;
@@ -845,18 +851,19 @@ function computeStats(root){root=root||ed;
   return {prem,rem,otras,remates,pend,min,rpm:min>0?remates/min:0,maxRun,frasesP,frasesR};
 }
 function updateStats(){if(S.view!=='vEd')return;const s=computeStats();const tot=s.prem+s.rem;
-  $('#edStats').textContent=`${s.remates} remates · ${tot?Math.round(s.rem/tot*100):0}% remate · ${s.rpm.toFixed(1).replace('.',',')}/min${s.pend?` · ${s.pend} pendiente${s.pend>1?'s':''}`:''}`}
+  $('#edStats').textContent=`${s.remates} remates · ${tot?Math.round(s.rem/tot*100):0}% remate · ${s.rpm.toFixed(1).replace('.',',')}/min${s.pend?` · ${s.pend} pendiente${s.pend>1?'s':''}`:''}`;const sp=document.createElement('span');sp.id='edPag';sp.textContent=S.pagEd!=null?' · '+pagTxt(S.pagEd):'';$('#edStats').appendChild(sp);pagEditor()}
 $('#edStats').onclick=()=>{const s=computeStats();const tot=s.prem+s.rem||1;
   openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:12px">Análisis del texto</div>
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
    <div class="stat"><b style="color:var(--pink)">${s.remates}</b><span class="s">remates</span></div>
    <div class="stat"><b>${s.rpm.toFixed(1).replace('.',',')}</b><span class="s">por minuto</span></div>
    <div class="stat"><b>${durTxt(s.min)}</b><span class="s">en escena aprox.</span></div></div>
+  <button class="card row" id="anPag" style="width:100%;text-align:left;margin-bottom:14px"><span><b>${pagTxt(pagMedida(ed.innerHTML))}</b> <span class="s">· ${pag().tam}, letra ${pag().pt} pt, interlineado ${String(pag().interl).replace('.',',')}</span></span><span style="color:var(--pink);font-size:13px">Ver páginas ›</span></button>
   <div class="row s" style="margin-bottom:6px"><span>Palabras</span><span><b style="color:var(--text)">${Math.round(s.prem/tot*100)}% premisa</b> · <b style="color:var(--pink)">${Math.round(s.rem/tot*100)}% remate</b></span></div>
   <div class="split" style="margin-bottom:14px"><div style="flex:${s.prem};background:var(--faint)"></div><div style="flex:${s.rem};background:var(--pink)"></div></div>
   ${s.maxRun>=25?`<div class="banner" style="background:rgba(255,181,71,.12);color:var(--amber)">Tramo más largo sin remate: ${s.maxRun} palabras. ¿Se puede recortar o meter un golpe antes?</div>`:''}
   ${s.pend?`<div class="banner" style="background:rgba(255,138,80,.12);color:#FF8A50">Material pendiente en este texto: ${s.pend}</div>`:''}
-  <div class="s" style="line-height:1.5;margin-top:6px">Cuenta como premisa todo el texto hablado que no es remate. El acting, las notas, los títulos y el material pendiente no cuentan. Tiempo calculado a ${PPM()} palabras por minuto (cámbialo en Ajustes).</div>`)};
+  <div class="s" style="line-height:1.5;margin-top:6px">Cuenta como premisa todo el texto hablado que no es remate. El acting, las notas, los títulos y el material pendiente no cuentan. Tiempo calculado a ${PPM()} palabras por minuto (cámbialo en Ajustes).</div>`);$('#anPag').onclick=()=>{flushSave();verPagina(S.textos[S.editing])}};
 
 /* ficha del texto */
 $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
@@ -867,10 +874,12 @@ $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
   <div class="lbl">Etiquetas</div><div id="fT"></div>
   <div class="lbl">Pases de este texto</div>${pasesDe(t.id).map(p=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span style="font-size:13px">${esc(p.local||(paseTipo(p)==='ensayo'?'Ensayo':'Sin local'))}${p.ciudad?' <span class="s">('+esc(p.ciudad)+')</span>':''} <span class="s">· ${fechaCorta(p.fecha)}</span></span>${starsTxt(p.notas[t.id])}</div>`).join('')||'<div class="s">Aún no se ha probado en ningún pase.</div>'}
   <div class="s" style="margin-top:14px">Creado ${fecha(t.creado)} · editado ${fecha(t.editado)}</div>
-  <div class="row" style="margin-top:16px"><button class="btn ghost" id="fDel" style="flex:1">Borrar texto</button><button class="btn" id="fOk" style="flex:1">Hecho</button></div>`);
+  <div class="row" style="margin-top:14px;gap:8px"><button class="btn ghost" id="fPag" style="flex:1">Ver como página</button><button class="btn ghost" id="fPr" style="flex:1">Imprimir / PDF</button></div>
+  <div class="row" style="margin-top:8px"><button class="btn ghost" id="fDel" style="flex:1">Borrar texto</button><button class="btn" id="fOk" style="flex:1">Hecho</button></div>`);
   const est0=t.estado;const ftb=tagBox($('#fT'),t.etiquetas,()=>(t.titulo||'')+' '+strip(t.html));
   $$('#fE .chip').forEach(c=>c.onclick=()=>{t.estado=c.dataset.e;$$('#fE .chip').forEach(x=>x.classList.toggle('on',x===c))});
   $$('#fC .chip').forEach(c=>c.onclick=()=>{t.categoria=c.dataset.c;$$('#fC .chip').forEach(x=>x.classList.toggle('on',x===c))});
+  $('#fPag').onclick=()=>verPagina(t);$('#fPr').onclick=()=>{closeSheet();imprimirTexto(t)};
   $('#fCarp').onclick=()=>{t.etiquetas=ftb.get();Store.put('textos',t);moverTexto(t,()=>$('#edInfo').click())};
   $('#fOk').onclick=()=>{marcaAvance(est0,t.estado);t.etiquetas=ftb.get();t.editado=now();Store.put('textos',t);closeSheet()};
   $('#fDel').onclick=()=>confirmBox('¿Borrar «'+(t.titulo||'Sin título')+'»? No se puede deshacer.','Borrar',()=>{delete S.textos[t.id];Store.del('textos',t.id);Object.values(S.ideas).forEach(i=>{if(i.pasada===t.id){delete i.pasada;Store.put('ideas',i)}});S.editing=null;go('vMesa')});
@@ -1273,6 +1282,47 @@ async function verAnalisis(pid,nuevo){
 }
 async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
+
+/* ============ formato de página ============ */
+const PAG_TAM={A4:[21,29.7],A5:[14.8,21],Carta:[21.59,27.94]};
+const PAG_FUENTES={sans:['Sin remates (Arial)','Arial,Helvetica,sans-serif'],serif:['Con remates (Times)','"Times New Roman",Times,serif'],mono:['Máquina de escribir (Courier)','"Courier New",Courier,monospace']};
+const PAG_DEF={tam:'A4',fuente:'sans',pt:12,interl:1.5,marg:2.5};
+const pag=()=>Object.assign({},PAG_DEF,S.cfg.pag||{});
+const CM=96/2.54;
+function pagCSS(f){f=f||pag();return `font-family:${PAG_FUENTES[f.fuente][1]};font-size:${f.pt}pt;line-height:${f.interl};color:#111`}
+function pagMedida(html,f){f=f||pag();const [W,H]=PAG_TAM[f.tam];
+  let m=$('#pagMeasure');if(!m){m=document.createElement('div');m.id='pagMeasure';m.className='pv pvdoc';m.style.cssText='position:absolute;left:-9999px;top:0;visibility:hidden';document.body.appendChild(m)}
+  m.style.width=((W-2*f.marg)*CM)+'px';m.style.cssText+=';'+pagCSS(f);m.innerHTML=html||'';
+  const h=m.scrollHeight,ph=(H-2*f.marg)*CM;m.innerHTML='';return Math.max(0,h/ph)}
+const pagTxt=n=>n<0.05?'0 págs':(n<1?'menos de 1 pág':(Math.round(n*10)/10).toString().replace('.',',')+' pág'+(n>=1.05?'s':''));
+function minPorPagina(){const f=pag();const muestra='<p>'+('palabra '.repeat(4000))+'</p>';const n=pagMedida(muestra,f);return n?4000/n/PPM():0}
+let pagT=null;function pagEditor(){clearTimeout(pagT);pagT=setTimeout(()=>{if(S.view!=='vEd')return;const n=pagMedida(ed.innerHTML);S.pagEd=n;const el=$('#edPag');if(el)el.textContent=' · '+pagTxt(n)},500)}
+function verPagina(t){flushSave&&flushSave();const f=pag(),[W,H]=PAG_TAM[f.tam],m=f.marg,gap=0.8;
+  const zoom=Math.min(1,(innerWidth-40)/(W*CM));
+  openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:8px"><div class="t" style="font-size:16px">${esc(t.titulo||'Sin título')}</div><button class="btn sm" id="vpPr">Imprimir / PDF</button></div>
+   <div class="s" id="vpInfo" style="margin-bottom:10px"></div>
+   <div style="overflow-x:auto;background:#5b5560;border-radius:10px;padding:14px 0 14px 14px"><div style="zoom:${zoom}"><div class="pv pvdoc" id="vpDoc" style="${pagCSS(f)};box-sizing:content-box;height:${(H-2*m)*CM}px;padding:${m*CM}px;column-width:${(W-2*m)*CM}px;column-gap:${(2*m+gap)*CM}px;column-fill:auto;background:repeating-linear-gradient(90deg,#fff 0,#fff ${W*CM}px,#5b5560 ${W*CM}px,#5b5560 ${(W+gap)*CM}px)"><h1 style="font-size:1.4em;margin:0 0 .8em">${esc(t.titulo||'')}</h1>${t.html||''}</div></div></div>
+   <div class="s" style="margin-top:8px">Desliza a los lados para pasar de página. Formato: ${f.tam} · ${PAG_FUENTES[f.fuente][0].split(' (')[0]} ${f.pt} pt · interlineado ${String(f.interl).replace('.',',')} · márgenes ${String(f.marg).replace('.',',')} cm. Se cambia en Ajustes → De trabajo.</div>`);
+  const d=$('#vpDoc');d.style.width=((W-2*m)*CM)+'px';const n=Math.max(1,Math.round((d.scrollWidth+2*m*CM+gap*CM)/((W+gap)*CM)));d.style.width=((n*(W+gap)-gap-2*m)*CM)+'px';
+  $('#vpInfo').innerHTML=`<b style="color:var(--text)">${n} página${n===1?'':'s'}</b> · unos ${durTxt(minOf(statsOf(t)))} en escena a ${PPM()} pal/min`;
+  $('#vpPr').onclick=()=>imprimirTexto(t)}
+function imprimirTexto(t){const f=pag();
+  let st=$('#pagePrintCSS');if(!st){st=document.createElement('style');st.id='pagePrintCSS';document.head.appendChild(st)}
+  st.textContent=`@media print{@page{size:${f.tam==='Carta'?'letter':f.tam};margin:${f.marg}cm}#printArea{padding:0!important}}`;
+  $('#printArea').innerHTML=`<div class="pv pvdoc" style="${pagCSS(f)}"><h1 style="font-size:1.4em;margin:0 0 .8em">${esc(t.titulo||'')}</h1>${t.html||''}</div>`;
+  setTimeout(()=>{window.print();setTimeout(()=>{st.textContent=''},1500)},50)}
+function renderPagAj(){const box=$('#pagBox');if(!box)return;const f=pag();
+  const seg=(k,opc)=>`<div class="seg" data-k="${k}">${opc.map(([v,l])=>`<button data-v="${v}" class="${String(f[k])===String(v)?'on':''}">${l}</button>`).join('')}</div>`;
+  const mpp=minPorPagina();
+  box.innerHTML=`<div class="s" style="margin-bottom:10px;line-height:1.5">Cómo se mide y se imprime un texto. El editor te dice cuántas páginas lleva y, con tu velocidad al hablar, cuánto dura cada página.</div>
+   <div class="lbl">Tamaño de página</div>${seg('tam',[['A4','A4'],['A5','A5'],['Carta','Carta']])}
+   <div class="lbl">Letra</div>${seg('fuente',Object.entries(PAG_FUENTES).map(([k,v])=>[k,v[0].split(' (')[1].replace(')','')]))}
+   <div class="lbl">Tamaño de letra</div>${seg('pt',[[10,'10'],[11,'11'],[12,'12'],[14,'14'],[16,'16']])}
+   <div class="lbl">Interlineado</div>${seg('interl',[[1,'1'],[1.15,'1,15'],[1.5,'1,5'],[2,'2']])}
+   <div class="lbl">Márgenes</div>${seg('marg',[[1.5,'Estrechos'],[2.5,'Normales'],[3,'Anchos']])}
+   <div class="card" style="margin:14px 0 0;text-align:center"><div style="font-size:26px;font-weight:800;color:var(--pink)">${mpp?durTxt(mpp):'—'}</div><div class="s">por página, a ${PPM()} palabras por minuto</div></div>
+   <div class="s" style="margin-top:8px;line-height:1.5">Cuanto más grande la letra y el interlineado, menos cabe en cada página. Elige un formato y no lo cambies: así las páginas te sirven de medida.</div>`;
+  box.querySelectorAll('[data-k] button').forEach(b=>b.onclick=()=>{const k=b.parentNode.dataset.k,v=b.dataset.v;S.cfg.pag=Object.assign(pag(),{[k]:isNaN(+v)?v:+v});Store.cfg();renderPagAj()})}
 
 /* ============ material quemado ============ */
 const normL=x=>(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
