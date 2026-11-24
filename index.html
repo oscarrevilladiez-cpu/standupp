@@ -128,6 +128,20 @@ input:focus,textarea:focus{border-color:var(--pink)}
 .ftile.new svg{color:var(--mute)}
 #ajTabs{margin-bottom:14px}
 .pvdoc p,.pvdoc li{margin:0 0 .35em}.pvdoc img{max-width:100%}
+#pgBox{position:relative}
+#rulH,#rulV{display:none}
+#pgLines{position:absolute;left:0;top:0;width:0;height:0;pointer-events:none}
+.pgl{position:absolute;border-top:1.5px dashed var(--faint);height:0}
+.pgl span{position:absolute;right:0;top:-9px;font-size:10px;line-height:16px;background:var(--bg);color:var(--mute);padding:0 7px;border-radius:8px;border:1px solid var(--line)}
+#vEd.pagmode{max-width:1200px}
+#vEd.pagmode .edwrap{background:#3b3740}
+#vEd.pagmode #pgBox{width:max-content;margin:0 auto;padding-left:28px}
+#vEd.pagmode #rulH{display:block;position:sticky;top:-30px;z-index:3;margin-bottom:6px}
+#vEd.pagmode #rulV{display:block;position:absolute;left:0}
+#vEd.pagmode #ed{max-width:none;margin:0;box-sizing:border-box;background:#fff;box-shadow:0 3px 18px rgba(0,0,0,.45);caret-color:#FF3E8E}
+#vEd.pagmode #ed p,#vEd.pagmode #ed li{margin:0 0 .35em}
+#vEd.pagmode .pgl{border-top:1.5px dashed #b9b2bf}
+#vEd.pagmode .pgl span{background:#fff;color:#8a8290;border-color:#e2dee5;right:6px}
 </style>
 <style id="stylesCSS"></style>
 </head>
@@ -283,7 +297,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.6</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.7</div>
   </section>
 
   <!-- EDITOR -->
@@ -298,7 +312,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <button class="ib" id="edTheme"></button>
       <button class="ib" id="edInfo"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg></button>
     </div>
-    <div class="edwrap" id="edWrap"><div id="ed" contenteditable="true" spellcheck="true"></div></div>
+    <div class="edwrap" id="edWrap"><div id="pgBox"><div id="rulH"></div><div id="rulV"></div><div id="ed" contenteditable="true" spellcheck="true"></div><div id="pgLines"></div></div></div>
     <input type="file" id="edFile" accept="image/*" hidden>
   </section>
 </div>
@@ -525,7 +539,7 @@ function buildStyleCSS(){
     if(s.marco==='subrayado')css+=`${sel}{text-decoration:underline dashed ${c};text-underline-offset:4px}`;
     if(s.antes)css+=`${sel}::before{content:${JSON.stringify(s.antes)}}`;if(s.despues)css+=`${sel}::after{content:${JSON.stringify(s.despues)}}`;
   });
-  {const tm=S.cfg.tema;S.cfg.tema='light';S.cfg.estilos.forEach(st=>{css+=`.pvdoc [data-st="${st.id}"]{color:${forTheme(st.color)}}`});S.cfg.tema=tm}
+  {const tm=S.cfg.tema;S.cfg.tema='light';S.cfg.estilos.forEach(st=>{css+=`.pvdoc [data-st="${st.id}"],#vEd.pagmode #ed [data-st="${st.id}"]{color:${forTheme(st.color)}}`});S.cfg.tema=tm}
   $('#stylesCSS').textContent=css;
 }
 function applyTheme(){document.body.className=S.cfg.tema==='light'?'light':'dark';
@@ -1296,7 +1310,7 @@ function pagMedida(html,f){f=f||pag();const [W,H]=PAG_TAM[f.tam];
   const h=m.scrollHeight,ph=(H-2*f.marg)*CM;m.innerHTML='';return Math.max(0,h/ph)}
 const pagTxt=n=>n<0.05?'0 págs':(n<1?'menos de 1 pág':(Math.round(n*10)/10).toString().replace('.',',')+' pág'+(n>=1.05?'s':''));
 function minPorPagina(){const f=pag();const muestra='<p>'+('palabra '.repeat(4000))+'</p>';const n=pagMedida(muestra,f);return n?4000/n/PPM():0}
-let pagT=null;function pagEditor(){clearTimeout(pagT);pagT=setTimeout(()=>{if(S.view!=='vEd')return;const n=pagMedida(ed.innerHTML);S.pagEd=n;const el=$('#edPag');if(el)el.textContent=' · '+pagTxt(n)},500)}
+let pagT=null;function pagEditor(){clearTimeout(pagT);pagT=setTimeout(()=>{if(S.view!=='vEd')return;const n=pagMedida(ed.innerHTML);S.pagEd=n;const el=$('#edPag');if(el)el.textContent=' · '+pagTxt(n);pagVista()},400)}
 function verPagina(t){flushSave&&flushSave();const f=pag(),[W,H]=PAG_TAM[f.tam],m=f.marg,gap=0.8;
   const zoom=Math.min(1,(innerWidth-40)/(W*CM));
   openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:8px"><div class="t" style="font-size:16px">${esc(t.titulo||'Sin título')}</div><button class="btn sm" id="vpPr">Imprimir / PDF</button></div>
@@ -1320,9 +1334,45 @@ function renderPagAj(){const box=$('#pagBox');if(!box)return;const f=pag();
    <div class="lbl">Tamaño de letra</div>${seg('pt',[[10,'10'],[11,'11'],[12,'12'],[14,'14'],[16,'16']])}
    <div class="lbl">Interlineado</div>${seg('interl',[[1,'1'],[1.15,'1,15'],[1.5,'1,5'],[2,'2']])}
    <div class="lbl">Márgenes</div>${seg('marg',[[1.5,'Estrechos'],[2.5,'Normales'],[3,'Anchos']])}
+   <div class="lbl">En el editor</div>
+   <div class="trow"><span>En el ordenador: ver el texto como una hoja, con reglas</span><button class="tg ${S.cfg.pagRegla!==false?'on':''}" data-pt="pagRegla"></button></div>
+   <div class="trow"><span>En el móvil: línea discontinua donde acaba cada página</span><button class="tg ${S.cfg.pagLineas!==false?'on':''}" data-pt="pagLineas"></button></div>
    <div class="card" style="margin:14px 0 0;text-align:center"><div style="font-size:26px;font-weight:800;color:var(--pink)">${mpp?durTxt(mpp):'—'}</div><div class="s">por página, a ${PPM()} palabras por minuto</div></div>
    <div class="s" style="margin-top:8px;line-height:1.5">Cuanto más grande la letra y el interlineado, menos cabe en cada página. Elige un formato y no lo cambies: así las páginas te sirven de medida.</div>`;
+  box.querySelectorAll('[data-pt]').forEach(b=>b.onclick=()=>{const k=b.dataset.pt;S.cfg[k]=S.cfg[k]===false;Store.cfg();renderPagAj()});
   box.querySelectorAll('[data-k] button').forEach(b=>b.onclick=()=>{const k=b.parentNode.dataset.k,v=b.dataset.v;S.cfg.pag=Object.assign(pag(),{[k]:isNaN(+v)?v:+v});Store.cfg();renderPagAj()})}
+
+/* ============ editor como página: reglas y saltos ============ */
+function rulerH(f){const [W]=PAG_TAM[f.tam],w=W*CM,m=f.marg*CM;let t='';
+  for(let i=0;i<=W*4;i++){const x=i*CM/4,big=i%4===0,mid=i%2===0;t+=`<line x1="${x}" x2="${x}" y1="${big?8:mid?13:16}" y2="22" stroke="#6e6874" stroke-width="${big?1:.7}"/>`;if(big&&i>0&&i<W*4)t+=`<text x="${x}" y="8" font-size="8" text-anchor="middle" fill="#6e6874" font-family="Inter,Arial">${i/4}</text>`}
+  return `<svg width="${w}" height="22" style="display:block"><rect width="${w}" height="22" fill="#f4f2f5"/><rect width="${m}" height="22" fill="#d6d1da"/><rect x="${w-m}" width="${m}" height="22" fill="#d6d1da"/>${t}</svg>`}
+function rulerV(f,hTot){const ph=(PAG_TAM[f.tam][1]-2*f.marg)*CM,m=f.marg*CM;let t='';
+  const pages=Math.max(1,Math.ceil((hTot-2*m)/ph-0.001));
+  for(let k=0;k<pages;k++){const T=k*ph,y0=k===0?0:m+k*ph,y1=Math.min(hTot,m+(k+1)*ph+(k===pages-1?m:0));
+    if(k>0)t+=`<rect y="${y0-1}" width="22" height="2" fill="#FF3E8E"/><text x="12" y="${y0+11}" font-size="9" text-anchor="middle" fill="#FF3E8E" font-family="Inter,Arial" font-weight="800">${k+1}</text>`;
+    for(let i=1;;i++){const y=T+i*CM/4;if(y>=y1-2)break;if(y<=y0+(k>0?15:0))continue;const big=i%4===0,mid=i%2===0;
+      t+=`<line y1="${y}" y2="${y}" x1="${big?9:mid?14:17}" x2="22" stroke="#6e6874" stroke-width="${big?1:.7}"/>`;if(big)t+=`<text x="6" y="${y+3}" font-size="8" text-anchor="middle" fill="#6e6874" font-family="Inter,Arial">${i/4}</text>`}}
+  return `<svg width="22" height="${hTot}" style="display:block"><rect width="22" height="${hTot}" fill="#f4f2f5"/><rect width="22" height="${m}" fill="#d6d1da"/><rect y="${hTot-m}" width="22" height="${m}" fill="#d6d1da"/>${t}</svg>`}
+function pagVista(){if(S.view!=='vEd')return;const f=pag(),[W,H]=PAG_TAM[f.tam],m=f.marg*CM,ph=(H-2*f.marg)*CM;
+  const pc=innerWidth>=1000&&S.cfg.pagRegla!==false,lin=S.cfg.pagLineas!==false;
+  $('#vEd').classList.toggle('pagmode',pc);const L=$('#pgLines');L.innerHTML='';
+  if(pc){ed.style.cssText=`width:${W*CM}px;padding:${m}px;${pagCSS(f)};min-height:0`;
+    const cont=ed.scrollHeight-2*m,n=Math.max(1,Math.ceil(cont/ph-0.001));ed.style.minHeight=(n*ph+2*m)+'px';
+    $('#rulH').innerHTML=rulerH(f);$('#rulV').style.top=ed.offsetTop+'px';$('#rulV').innerHTML=rulerV(f,ed.offsetHeight);
+    const top0=ed.offsetTop+m;let k=1;
+    for(const c of ed.children){const a=c.offsetTop-top0,h=c.offsetHeight;
+      while(k<n&&a+h>k*ph+1){let y;if(a<k*ph-1){const lh=parseFloat(getComputedStyle(c).lineHeight)||20;y=c.offsetTop+Math.max(1,Math.floor((k*ph-a)/lh))*lh}else y=c.offsetTop-3;
+        L.insertAdjacentHTML('beforeend',`<div class="pgl" style="top:${y}px;left:${ed.offsetLeft}px;width:${W*CM}px"><span>página ${k+1}</span></div>`);k++}}
+    return}
+  ed.style.cssText='';$('#rulH').innerHTML='';$('#rulV').innerHTML='';if(!lin)return;
+  // móvil: buscar en una página medida dónde empieza cada página y marcar ese párrafo
+  let mm=$('#pagMeasure');pagMedida('<p>x</p>',f);mm=$('#pagMeasure');mm.innerHTML=ed.innerHTML;
+  const kids=[...mm.children],eds=[...ed.children];let k=1;
+  for(let i=0;i<kids.length&&i<eds.length;i++){const c=kids[i],bot=c.offsetTop+c.offsetHeight;
+    while(bot>k*ph+1){const dentro=c.offsetTop<k*ph-1;let y=eds[i].offsetTop-2;if(dentro){const lh=parseFloat(getComputedStyle(eds[i]).lineHeight)||24,fr=(k*ph-c.offsetTop)/c.offsetHeight;y=eds[i].offsetTop+Math.max(1,Math.round(fr*eds[i].offsetHeight/lh))*lh}
+      L.insertAdjacentHTML('beforeend',`<div class="pgl" style="top:${y}px;left:${ed.offsetLeft}px;width:${ed.offsetWidth}px"><span>fin de la página ${k}</span></div>`);k++}}
+  mm.innerHTML=''}
+window.addEventListener('resize',()=>{clearTimeout(pagT);pagT=setTimeout(pagVista,250)});
 
 /* ============ material quemado ============ */
 const normL=x=>(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();
