@@ -254,7 +254,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.1</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.2</div>
   </section>
 
   <!-- EDITOR -->
@@ -1193,7 +1193,7 @@ async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
 
 /* ============ licencia (Payhip a través del comprobador en Google Apps Script) ============ */
-const LIC_URL_FIJA='';            // dirección /exec del comprobador (Apps Script)
+const LIC_URL_FIJA='https://script.google.com/macros/s/AKfycbwVI5MLg8vZ9kh6NyjFfv3nGHeQPTX250kZk2gQKiZEEIZQl0aKT2ScqA3jWkHrrO8hHQ/exec';            // dirección /exec del comprobador (Apps Script)
 const LIC_TIENDA='https://payhip.com/b/mclbx';
 const LIC_PRUEBA_DIAS=7;
 const LIC={st:null,url:()=>{try{return localStorage.getItem('licTest')||LIC_URL_FIJA}catch(e){return LIC_URL_FIJA}},
