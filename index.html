@@ -119,6 +119,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
   .col{flex:1 1 0;max-width:none}
   .edwrap{padding:30px 40px 160px}
 }
+#licGate{position:fixed;inset:0;z-index:900;background:var(--bg);overflow:auto}
 </style>
 <style id="stylesCSS"></style>
 </head>
@@ -219,6 +220,10 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px;line-height:1.5">Copia todo tu material (sin fotos) como texto, o pega una copia para restaurarla. Para traer lo que escribiste en el prototipo: allí pulsa «Copiar copia» y aquí «Restaurar».</div>
       <div class="row"><button class="btn ghost sm" id="bkCopy" style="flex:1">Copiar copia</button><button class="btn ghost sm" id="bkRestore" style="flex:1">Restaurar…</button></div>
     </div>
+    <div class="card" id="licCard" style="display:none">
+      <div class="lbl" style="margin-top:0">Licencia</div>
+      <div id="licBox"></div>
+    </div>
     <div class="card">
       <div class="lbl" style="margin-top:0">Inteligencia artificial (opcional)</div>
       <div id="iaBox"></div>
@@ -249,7 +254,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.0</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.1</div>
   </section>
 
   <!-- EDITOR -->
@@ -623,7 +628,7 @@ $('#fiCam').onclick=()=>$('#fiFile').click();
 $('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);S.fotoInicio=d;await IDB.set('fotoInicio',d);renderIni();toast('Imagen de inicio cambiada')};
 $('#fiDel').onclick=async()=>{S.fotoInicio=null;await IDB.del('fotoInicio');renderIni();toast('Vuelve la ilustración')};
 function renderAjustes(){
-  renderIA();
+  renderIA();renderLic();
   renderObjetivos();
   $('#ppmV').textContent=PPM();$('#ppmM').onclick=()=>setPPM(PPM()-5);$('#ppmP').onclick=()=>setPPM(PPM()+5);
   const pm=ppmMedia();$('#ppmE').textContent=pm?`Calcular con mis ensayos (${pm.ppm} pal/min, media de ${pm.n})`:'Aún no hay ensayos: haz uno en Modo escenario → Ensayo';$('#ppmE').disabled=!pm;$('#ppmE').style.opacity=pm?1:.5;
@@ -1187,6 +1192,56 @@ async function verAnalisis(pid,nuevo){
 async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
 
+/* ============ licencia (Payhip a través del comprobador en Google Apps Script) ============ */
+const LIC_URL_FIJA='';            // dirección /exec del comprobador (Apps Script)
+const LIC_TIENDA='https://payhip.com/b/mclbx';
+const LIC_PRUEBA_DIAS=14;
+const LIC={st:null,url:()=>{try{return localStorage.getItem('licTest')||LIC_URL_FIJA}catch(e){return LIC_URL_FIJA}},
+ async init(){if(!this.url())return;
+  let pu=await IDB.get('primerUso');if(!pu){pu=now();await IDB.set('primerUso',pu)}this.primer=pu;
+  let ap=await IDB.get('aparato');if(!ap){ap='ap-'+uid()+uid();await IDB.set('aparato',ap)}this.aparato=ap;
+  this.st=await IDB.get('lic')||null;
+  if(this.st&&this.st.ok&&now()-(this.st.revisado||0)>7*864e5)this.revisar();
+  this.puerta()},
+ diasRestantes(){return Math.max(0,LIC_PRUEBA_DIAS-Math.floor((now()-this.primer)/864e5))},
+ activa(){return !this.url()||!!(this.st&&this.st.ok)},
+ async llamar(accion,clave){const u=this.url()+(this.url().includes('?')?'&':'?')+'accion='+accion+'&clave='+encodeURIComponent(clave)+'&aparato='+encodeURIComponent(this.aparato);
+  const r=await fetch(u,{redirect:'follow'});return await r.json()},
+ motivo(r){return {no_existe:'Ese código no existe. Revisa que esté copiado entero (con los guiones).',desactivada:'Esa licencia está desactivada (devolución o anulación).',limite:`Esa licencia ya está usada en ${r.max||3} aparatos. Desactívala en alguno desde Ajustes → Licencia.`,sin_clave:'Escribe el código.',no_activada:'La licencia no está activada en este aparato.'}[r.motivo]||'No se ha podido comprobar ('+(r.motivo||'error')+').'},
+ async activar(clave){clave=clave.trim();if(!clave)throw new Error('Escribe el código');
+  const r=await this.llamar('activar',clave);if(!r.ok)throw new Error(this.motivo(r));
+  this.st={ok:true,clave,quien:r.quien||'',activada:now(),revisado:now()};await IDB.set('lic',this.st);return r},
+ async desactivar(){if(!this.st)return;try{await this.llamar('desactivar',this.st.clave)}catch(e){}this.st=null;await IDB.del('lic')},
+ async revisar(){try{const r=await this.llamar('comprobar',this.st.clave);
+   if(r.ok){this.st.revisado=now();await IDB.set('lic',this.st)}
+   else if(['no_existe','desactivada','no_activada'].includes(r.motivo)){this.st=null;await IDB.del('lic');this.puerta()}}catch(e){/* sin conexión: se mantiene */}},
+ puerta(){const g=$('#licGate');if(this.activa()||this.diasRestantes()>0){g&&g.remove();return}
+  if(g)return;const d=document.createElement('div');d.id='licGate';
+  d.innerHTML=`<div style="max-width:420px;margin:0 auto;padding:40px 22px;text-align:center">
+   <svg width="72" height="72" viewBox="0 0 200 200"><rect width="200" height="200" rx="46" fill="#FF3E8E"/><g transform="translate(0 2)">${uGlyph('#FFFFFF','#0E0D10','#FF3E8E')}</g></svg>
+   <div class="t" style="font-size:21px;margin:18px 0 8px">Se ha acabado la prueba gratuita</div>
+   <div class="s" style="line-height:1.5;margin-bottom:22px">Tu material sigue guardado y no se pierde nada. Para seguir usando stand UPP comedy, consigue tu licencia individual y escribe aquí el código que te llega por correo.</div>
+   <a class="btn" href="${LIC_TIENDA}" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin-bottom:18px">Conseguir licencia</a>
+   <input id="lgK" placeholder="Código de licencia (XXXXX-XXXXX-…)" style="width:100%;text-align:center;margin-bottom:10px">
+   <button class="btn ghost" id="lgA" style="width:100%">Activar</button>
+   <div id="lgE" class="s" style="margin-top:10px;min-height:18px"></div>
+   <button class="btn ghost sm" id="lgC" style="margin-top:26px">Copiar una copia de mi material</button></div>`;
+  document.body.appendChild(d);
+  $('#lgA').onclick=async()=>{$('#lgE').textContent='Comprobando…';try{await LIC.activar($('#lgK').value);d.remove();toast('Licencia activada. ¡Gracias!');renderAjustes()}catch(e){$('#lgE').innerHTML=`<span style="color:#FF8A50">${esc(e.message||String(e))}</span>`}};
+  $('#lgC').onclick=()=>$('#bkCopy').click()}
+};
+function renderLic(){const c=$('#licCard');if(!c)return;if(!LIC.url()){c.style.display='none';return}c.style.display='';
+  const st=LIC.st;
+  $('#licBox').innerHTML=st&&st.ok?`<div class="s" style="line-height:1.5"><span style="color:var(--green)">✓ Licencia activada</span> en este aparato${st.quien?' · '+esc(st.quien):''}<br>Código ••••${esc(st.clave.slice(-5))}</div>
+     <button class="btn ghost sm" id="licX" style="width:100%;margin-top:10px">Desactivar en este aparato</button>
+     <div class="s" style="margin-top:6px">Úsalo si cambias de móvil u ordenador: libera el hueco para el aparato nuevo (máximo 3).</div>`
+   :`<div class="s" style="line-height:1.5;margin-bottom:10px">${LIC.diasRestantes()>0?`Prueba gratuita: te quedan <b>${LIC.diasRestantes()} días</b>.`:'La prueba gratuita ha terminado.'} La licencia individual sirve para 3 aparatos tuyos.</div>
+     <div class="row"><input id="licK" placeholder="Código de licencia" style="flex:1"><button class="btn sm" id="licA">Activar</button></div>
+     <div id="licE" class="s" style="margin-top:8px"></div>
+     <a href="${LIC_TIENDA}" target="_blank" rel="noopener" class="btn ghost sm" style="display:block;text-align:center;text-decoration:none;margin-top:10px">Conseguir licencia</a>`;
+  if($('#licX'))$('#licX').onclick=()=>confirmBox('¿Desactivar la licencia en este aparato?','Desactivar',async()=>{await LIC.desactivar();renderLic();LIC.puerta();toast('Licencia desactivada aquí')});
+  if($('#licA'))$('#licA').onclick=async()=>{$('#licE').textContent='Comprobando…';try{await LIC.activar($('#licK').value);renderLic();LIC.puerta();toast('Licencia activada')}catch(e){$('#licE').innerHTML=`<span style="color:#FF8A50">${esc(e.message||String(e))}</span>`}}}
+
 /* ============ IA opcional (clave del usuario, solo en este aparato) ============ */
 const IA={key:null,
  prov:()=>S.cfg.iaProv||'gemini',
@@ -1621,7 +1676,7 @@ function editStyle(id){
 }
 
 /* ============ arranque ============ */
-splash();applyTheme();buildStyleCSS();go('vIni');Store.init();
+splash();applyTheme();buildStyleCSS();go('vIni');Store.init().then(()=>LIC.init());
 /* app instalable */
 let deferredInstall=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installCard').style.display='block'});
