@@ -232,6 +232,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div class="lbl" style="margin-top:0">Foto de inicio</div>
       <div class="s" style="margin-bottom:10px;line-height:1.5">La franja de arriba de la pantalla de Inicio. Puedes poner una foto tuya de un escenario <b>(tamaño recomendado 1400 × 470 px)</b>. Se recorta por el centro: deja lo importante en medio.</div>
       <div class="row"><button class="btn ghost sm" id="fiCam" style="flex:1">Poner mi foto</button><button class="btn ghost sm" id="fiDel" style="flex:1">Usar la ilustración</button></div>
+      <div class="s" id="fiEstado" style="margin-top:8px"></div>
       <input type="file" id="fiFile" accept="image/*" hidden>
     </div>
     <div class="card" id="licCard" style="display:none">
@@ -297,7 +298,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.8</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.9</div>
   </section>
 
   <!-- EDITOR -->
@@ -397,7 +398,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
  async init(){
    const ok=await IDB.open();
    if(ok){S.textos=await IDB.get('textos')||{};S.ideas=await IDB.get('ideas')||{};S.setlists=await IDB.get('setlists')||{};S.pases=await IDB.get('pases')||{};const c=await IDB.get('cfg');if(c)S.cfg={...S.cfg,...c};
-     this.tomb=await IDB.get('tomb')||{};S.fotoInicio=await IDB.get('fotoInicio')||null;S.act=await IDB.get('act')||{};await IA.cargar();this.meta=await IDB.get('meta')||{};}
+     this.tomb=await IDB.get('tomb')||{};S.fotoInicio=await IDB.get('fotoInicio')||null;S.inicio=await IDB.get('inicio')||null;S.act=await IDB.get('act')||{};await IA.cargar();this.meta=await IDB.get('meta')||{};}
    Object.values(S.pases).forEach(p=>{if(!p.tipo){p.tipo='actuacion';const st=S.setlists[p.setlistId];if(st){p.items=p.items||[...(st.items||[])];p.setNombre=p.setNombre||st.nombre;p.maxMin=p.maxMin||st.maxMin}}});
    ensureFixed();applyTheme();buildStyleCSS();renderAll();setSync();
    this.loadGIS();
@@ -449,7 +450,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
      for(const k of Object.keys(this.tomb)){if(k.startsWith('drv:')&&!this.tomb[k+':ok']){try{await this.api('files/'+k.slice(4),{method:'DELETE'})}catch(e){}this.tomb[k+':ok']=now()}}
      // subir fotos pendientes
      m.fotoMap=m.fotoMap||{};
-     const ids=new Set();Object.values(S.ideas).forEach(i=>i.fotoId&&ids.add(i.fotoId));Object.values(S.textos).forEach(t=>(t.html||'').replace(/data-foto="([^"]+)"/g,(_,x)=>ids.add(x)));if(S.cfg.fotoInicioId)ids.add(S.cfg.fotoInicioId);
+     const ids=new Set();Object.values(S.ideas).forEach(i=>i.fotoId&&ids.add(i.fotoId));Object.values(S.textos).forEach(t=>(t.html||'').replace(/data-foto="([^"]+)"/g,(_,x)=>ids.add(x)));if(S.inicio&&S.inicio.id)ids.add(S.inicio.id);
      for(const id of ids){if(m.fotoMap[id])continue;const d=S.fotos[id]||await IDB.get('foto:'+id);if(!d)continue;const r=await this.multipart({name:id+'.jpg',parents:[m.fotos]},dataToBlob(d));m.fotoMap[id]=r.id}
      for(const k of Object.keys(this.tomb)){if(k.startsWith('foto:')){const id=k.slice(5);if(m.fotoMap[id]){try{await this.api('files/'+m.fotoMap[id],{method:'DELETE'})}catch(e){}delete m.fotoMap[id]}}}
      for(const i of Object.values(S.ideas)){if(!i.voz||i.voz.driveId)continue;const b=await IDB.get('voz:'+i.id);if(!b)continue;if(!m.grab)m.grab=await this.folder('Grabaciones',m.carpeta);
@@ -460,7 +461,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
          if(!m.grab)m.grab=await this.folder('Grabaciones',m.carpeta);
          const ext=(b.type.includes('mp4')?'.mp4':'.webm');const nombre=((S.setlists[p.setlistId]||{}).nombre||'pase')+' '+(p.fecha||'')+(p.grab.tipo==='video'?' (vídeo)':' (audio)')+ext;
          p.grab.driveId=await this.resumable({name:nombre,parents:[m.grab],mimeType:b.type},b);p.editado=now()}}
-     const out={app:'standupp',v:2,act:S.act,textos:S.textos,ideas:S.ideas,setlists:S.setlists,pases:S.pases,cfg:S.cfg,tomb:this.tomb,fotoMap:m.fotoMap,guardado:new Date().toISOString()};
+     const out={app:'standupp',v:2,inicio:S.inicio,act:S.act,textos:S.textos,ideas:S.ideas,setlists:S.setlists,pases:S.pases,cfg:S.cfg,tomb:this.tomb,fotoMap:m.fotoMap,guardado:new Date().toISOString()};
      const r=await this.multipart(m.material?{}:{name:'material.json',parents:[m.carpeta],mimeType:'application/json'},new Blob([JSON.stringify(out)],{type:'application/json'}),m.material);
      m.material=r.id;m.ultima=Date.now();this.dirty=false;
      IDB.set('meta',m);IDB.set('textos',S.textos);IDB.set('ideas',S.ideas);IDB.set('setlists',S.setlists);IDB.set('pases',S.pases);IDB.set('cfg',S.cfg);IDB.set('tomb',this.tomb);
@@ -478,6 +479,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
      }}
    if(R.act){Object.entries(R.act).forEach(([k,devs])=>{if(k==='_ed')return;S.act[k]=S.act[k]||{};Object.entries(devs).forEach(([d,v])=>{const l=S.act[k][d];if(!l||(v.seg||0)>(l.seg||0))S.act[k][d]=v})});IDB.set('act',S.act)}
    if(R.cfg&&(R.cfg.editado||0)>(S.cfg.editado||0)){S.cfg={...S.cfg,...R.cfg};ensureFixed();applyTheme();buildStyleCSS();changed=true}
+   if(R.inicio&&(R.inicio.editado||0)>((S.inicio&&S.inicio.editado)||0)){S.inicio=R.inicio;IDB.set('inicio',S.inicio);changed=true}
    if(R.fotoMap)this.meta.fotoMap={...(R.fotoMap||{}),...(this.meta.fotoMap||{})};
    if(changed&&S.view!=='vEd')renderAll();
    if(S.editing&&!S.textos[S.editing]){closeEditor();toast('Este texto se ha borrado en otro aparato')}
@@ -494,7 +496,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
 };
 function dataToBlob(d){const [h,b]=d.split(',');const mime=h.match(/:(.*?);/)[1];const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime})}
 function blobToData(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}
-function setSync(msg){
+function setSync(msg){try{renderFotoEstado()}catch(e){}
   const el=$('#sync1');const conectado=Store.hasToken();
   const txt=msg||(conectado?(Store.dirty?'Cambios pendientes':'Guardado en tu Drive'):(Store.meta.conectado?'Pulsa para reconectar con Google':'Solo en este aparato'));
   const col=msg==='Sincronizando…'?'var(--amber)':conectado&&!Store.dirty?'var(--green)':'var(--amber)';
@@ -715,11 +717,15 @@ function renderBoard(){
 
 /* --- Ajustes --- */
 $('#fiCam').onclick=()=>$('#fiFile').click();
-$('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);if(S.cfg.fotoInicioId)Store.delFoto(S.cfg.fotoInicioId);const id='inicio-'+uid();await Store.putFoto(id,d);S.cfg.fotoInicioId=id;S.fotoInicio=d;await IDB.set('fotoInicio',d);Store.cfg();renderIni();toast('Imagen de inicio cambiada')};
-$('#fiDel').onclick=async()=>{if(S.cfg.fotoInicioId)Store.delFoto(S.cfg.fotoInicioId);S.cfg.fotoInicioId=null;S.fotoInicio=null;await IDB.del('fotoInicio');Store.cfg();renderIni();toast('Vuelve la ilustración')};
+async function fijarInicio(d){if(S.inicio&&S.inicio.id)Store.delFoto(S.inicio.id);let id=null;if(d){id='inicio-'+uid();await Store.putFoto(id,d)}
+  S.inicio={id,editado:now()};S.fotoInicio=d;S.fotoInicioDe=id;await IDB.set('inicio',S.inicio);if(d)await IDB.set('fotoInicio',d);else await IDB.del('fotoInicio');Store.persist();renderIni();renderFotoEstado()}
+function renderFotoEstado(){const el=$('#fiEstado');if(!el)return;const id=S.inicio&&S.inicio.id;
+  el.innerHTML=!id?'':!Store.hasToken()?'Solo en este aparato (conecta Google para sincronizarla)':(Store.meta.fotoMap&&Store.meta.fotoMap[id])?'<span style="color:var(--green)">✓ Sincronizada con Google</span>':'Pendiente de subir a Google…'}
+$('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);await fijarInicio(d);toast('Imagen de inicio cambiada')};
+$('#fiDel').onclick=async()=>{await fijarInicio(null);toast('Vuelve la ilustración')};
 function renderAjustes(){
   const tab=S.ajTab||'g';$$('#ajTabs button').forEach(b=>{b.classList.toggle('on',b.dataset.t===tab);b.onclick=()=>{S.ajTab=b.dataset.t;renderAjustes();$('#vAj').scrollTop=0;window.scrollTo(0,0)}});$('#ajG').style.display=tab==='g'?'':'none';$('#ajT').style.display=tab==='t'?'':'none';
-  renderIA();renderLic();renderQuemadoAj();renderPagAj();
+  renderIA();renderLic();renderQuemadoAj();renderPagAj();renderFotoEstado();
   renderObjetivos();
   $('#ppmV').textContent=PPM();$('#ppmM').onclick=()=>setPPM(PPM()-5);$('#ppmP').onclick=()=>setPPM(PPM()+5);
   const pm=ppmMedia();$('#ppmE').textContent=pm?`Calcular con mis ensayos (${pm.ppm} pal/min, media de ${pm.n})`:'Aún no hay ensayos: haz uno en Modo escenario → Ensayo';$('#ppmE').disabled=!pm;$('#ppmE').style.opacity=pm?1:.5;
@@ -1672,8 +1678,9 @@ function splash(){const d=document.createElement('div');d.id='splash';
    <div style="position:absolute;bottom:28px;left:0;right:0;text-align:center;color:#6d6574;font-size:12px">Una app de <b style="color:#9C95A3">Oscar Revilla Díez</b></div>`;
   document.body.appendChild(d);setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),450)},1700)}
 async function renderIni(){
-  if(S.cfg.fotoInicioId&&S.fotoInicioDe!==S.cfg.fotoInicioId){const id=S.cfg.fotoInicioId;S.fotoInicioDe=id;Store.getFoto(id).then(d=>{if(d&&S.cfg.fotoInicioId===id){S.fotoInicio=d;IDB.set('fotoInicio',d);renderIni()}else if(!d)S.fotoInicioDe=null})}
-  else if(!S.cfg.fotoInicioId&&S.fotoInicioDe&&S.fotoInicio){S.fotoInicio=null;S.fotoInicioDe=null;IDB.del('fotoInicio')}
+  const iid=S.inicio&&S.inicio.id;
+  if(iid&&S.fotoInicioDe!==iid){S.fotoInicioDe=iid;Store.getFoto(iid).then(d=>{if(d&&S.inicio&&S.inicio.id===iid){S.fotoInicio=d;IDB.set('fotoInicio',d);renderIni()}else if(!d)S.fotoInicioDe=null})}
+  else if(S.inicio&&!iid&&S.fotoInicio){S.fotoInicio=null;S.fotoInicioDe=null;IDB.del('fotoInicio')}
   const foto=S.fotoInicio;$('#iniBand').innerHTML=foto?`<img src="${foto}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`:escenarioSVG();
   $('#iniLogo').innerHTML=wordmark(40,S.cfg.tema==='light'?'#1A171C':'#F5F2F6',S.cfg.tema==='light'?'#D81E68':'#FF3E8E');
   const T=Object.values(S.textos),cerr=T.filter(t=>t.estado==='cerrado'),rep=cerr.reduce((a,t)=>a+minOf(statsOf(t)),0),pend=T.reduce((a,t)=>a+((t.stats&&t.stats.pend)||0),0);
@@ -1898,7 +1905,7 @@ function editStyle(id){
 }
 
 /* ============ arranque ============ */
-splash();applyTheme();buildStyleCSS();go('vIni');Store.init().then(async()=>{if(S.fotoInicio&&!S.cfg.fotoInicioId){const id='inicio-'+uid();await Store.putFoto(id,S.fotoInicio);S.cfg.fotoInicioId=id;S.fotoInicioDe=id;Store.cfg()}LIC.init()});
+splash();applyTheme();buildStyleCSS();go('vIni');Store.init().then(async()=>{if(!S.inicio&&S.cfg.fotoInicioId&&S.fotoInicio){S.inicio={id:S.cfg.fotoInicioId,editado:now()};S.fotoInicioDe=S.inicio.id;await IDB.set('inicio',S.inicio);Store.persist()}else if(!S.inicio&&S.fotoInicio){await fijarInicio(S.fotoInicio)}LIC.init()});
 /* app instalable */
 let deferredInstall=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installCard').style.display='block'});
