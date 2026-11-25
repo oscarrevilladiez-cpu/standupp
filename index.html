@@ -142,6 +142,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
 #vEd.pagmode #ed p,#vEd.pagmode #ed li{margin:0 0 .35em}
 #vEd.pagmode .pgl{border-top:1.5px dashed #b9b2bf}
 #vEd.pagmode .pgl span{background:#fff;color:#8a8290;border-color:#e2dee5;right:6px}
+#gPill{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;gap:8px;align-items:center;background:var(--pink);color:#fff;font-weight:700;font-size:13.5px;padding:11px 18px;border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.45);white-space:nowrap}
 </style>
 <style id="stylesCSS"></style>
 </head>
@@ -298,7 +299,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.9</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.0</div>
   </section>
 
   <!-- EDITOR -->
@@ -420,7 +421,8 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
  connect(){if(CLIENT_ID.startsWith('PENDIENTE'))return toast('Falta configurar el acceso a Google (paso pendiente)');
    if(!this.tc)return toast('Sin conexión con Google ahora mismo');this.tc.requestAccessToken({prompt:this.meta.conectado?'':'consent'})},
  onToken(r){if(r.error){setSync('Google no ha dado permiso');return}this.token=r.access_token;this.tokenExp=Date.now()+(r.expires_in-120)*1000;
-   if(!this.meta.conectado){this.meta.conectado=true;IDB.set('meta',this.meta)}setSync();this.syncSoon(0)},
+   if(!this.meta.conectado){this.meta.conectado=true;IDB.set('meta',this.meta)}setSync();this.syncSoon(0);
+   this.api('about?fields=user(emailAddress)').then(x=>x.json()).then(j=>{if(j.user&&j.user.emailAddress){this.meta.email=j.user.emailAddress;IDB.set('meta',this.meta);setSync()}}).catch(()=>{})},
  hasToken(){return this.token&&Date.now()<this.tokenExp},
  async api(path,opt={},upload){const base=upload?'https://www.googleapis.com/upload/drive/v3/':'https://www.googleapis.com/drive/v3/';
    const r=await fetch(base+path,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+this.token}});
@@ -496,7 +498,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
 };
 function dataToBlob(d){const [h,b]=d.split(',');const mime=h.match(/:(.*?);/)[1];const bin=atob(b);const u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:mime})}
 function blobToData(b){return new Promise(r=>{const f=new FileReader();f.onload=()=>r(f.result);f.readAsDataURL(b)})}
-function setSync(msg){try{renderFotoEstado()}catch(e){}
+function setSync(msg){try{renderFotoEstado()}catch(e){}pillSync();
   const el=$('#sync1');const conectado=Store.hasToken();
   const txt=msg||(conectado?(Store.dirty?'Cambios pendientes':'Guardado en tu Drive'):(Store.meta.conectado?'Pulsa para reconectar con Google':'Solo en este aparato'));
   const col=msg==='Sincronizando…'?'var(--amber)':conectado&&!Store.dirty?'var(--green)':'var(--amber)';
@@ -504,7 +506,7 @@ function setSync(msg){try{renderFotoEstado()}catch(e){}
   el.onclick=()=>{if(!Store.hasToken())Store.connect();else Store.sync()};
   $('#modeBanner').innerHTML=Store.meta.conectado?'':`<div class="banner">Tu material se guarda en este aparato. <b>Conecta tu Google Drive</b> en Ajustes para tener copia en la nube y usarlo en el ordenador.</div>`;
   $('#storeInfo').innerHTML=(Store.meta.conectado
-   ?`Conectado a Google Drive. Todo se guarda en la carpeta <b>stand UPP comedy</b> de tu Drive (material.json y Fotos). La app solo puede ver esa carpeta.${Store.meta.ultima?'<br>Última sincronización: '+fecha(Store.meta.ultima):''}`
+   ?`Conectado a Google Drive. Todo se guarda en la carpeta <b>stand UPP comedy</b> de tu Drive (material.json y Fotos). La app solo puede ver esa carpeta.${Store.meta.email?`<br>Cuenta: <b>${esc(Store.meta.email)}</b>`:''}${Store.meta.ultima?'<br>Última sincronización: '+fecha(Store.meta.ultima):''}<br>${conectado?'<span style="color:var(--green)">● Conectado ahora</span>':'<span style="color:var(--amber)">● Desconectado: Google pide volver a entrar cada vez que abres la app o pasa una hora. Pulsa «Reconectar».</span>'}`
    :'Ahora mismo se guarda solo en este aparato. Conecta tu Google Drive para tener copia en la nube y usarlo en varios aparatos.')
    +`<div class="row" style="margin-top:10px"><button class="btn sm" id="gConnect" style="flex:1">${conectado?'Sincronizar ahora':Store.meta.conectado?'Reconectar con Google':'Conectar con Google Drive'}</button></div>`;
   $('#gConnect').onclick=()=>{if(conectado)Store.sync();else Store.connect()};
@@ -1303,6 +1305,11 @@ async function verAnalisis(pid,nuevo){
 async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
 
+/* ============ aviso de reconexión con Google ============ */
+function pillSync(){let b=$('#gPill');const ver=Store.meta&&Store.meta.conectado&&!Store.hasToken()&&navigator.onLine&&!['vEd','vEsc'].includes(S.view)&&!document.body.classList.contains('stage');
+  if(!ver){b&&b.remove();return}
+  if(!b){b=document.createElement('button');b.id='gPill';b.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Toca para sincronizar con Google';b.onclick=()=>Store.connect();document.body.appendChild(b)}}
+setInterval(pillSync,20000);window.addEventListener('online',pillSync);
 /* ============ formato de página ============ */
 const PAG_TAM={A4:[21,29.7],A5:[14.8,21],Carta:[21.59,27.94]};
 const PAG_FUENTES={sans:['Sin remates (Arial)','Arial,Helvetica,sans-serif'],serif:['Con remates (Times)','"Times New Roman",Times,serif'],mono:['Máquina de escribir (Courier)','"Courier New",Courier,monospace']};
