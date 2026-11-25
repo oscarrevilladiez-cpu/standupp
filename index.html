@@ -339,7 +339,7 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.5</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.6</div>
   </section>
 
   <!-- EDITOR -->
@@ -1390,6 +1390,10 @@ function menuGuardar(){openSheet(`<div class="grab"></div><div class="s" style="
    <button class="ftile" id="mgC" style="width:100%">⧉<span>Guardar como… <span class="s">(Ctrl+Mayús+S)</span></span></button>`);
   $('#mgG').onclick=()=>{closeSheet();guardarTexto()};$('#mgC').onclick=guardarComo}
 
+/* ============ guardar al salir o al cambiar de app ============ */
+function guardarYa(){try{if(S.editing)flushSave()}catch(e){}try{clearTimeout(Store.pt);IDB.set('textos',S.textos);IDB.set('ideas',S.ideas);IDB.set('setlists',S.setlists);IDB.set('pases',S.pases);IDB.set('cfg',S.cfg);IDB.set('tomb',Store.tomb);IDB.set('meta',Store.meta)}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){guardarYa();if(Store.hasToken())Store.sync()}});
+window.addEventListener('pagehide',guardarYa);window.addEventListener('beforeunload',guardarYa);
 /* ============ trabajo a la vez en dos aparatos ============ */
 let ultTecla=0;ed.addEventListener('input',()=>{ultTecla=Date.now()});
 function vivoTrasSync(){
