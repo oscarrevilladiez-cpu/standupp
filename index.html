@@ -159,6 +159,30 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
 .bars.top{position:static;border-top:0;border-bottom:1px solid var(--line);flex:none}
 .bars.top .bar{padding-left:0;padding-right:0;flex-wrap:wrap}
 .bars.top .bar+.bar{border-top:1px solid var(--line)}
+.sbn{display:none}
+/* PC: barras compactas */
+#vEd.pcmode .edtop{padding:3px 12px;gap:4px}
+#vEd.pcmode .ib{width:30px;height:30px;border-radius:8px}
+#vEd.pcmode .ib svg{width:17px;height:17px}
+#vEd.pcmode #edTitle{font-size:14.5px;padding:1px 2px}
+#vEd.pcmode #edStats{font-size:10.5px}
+#vEd.pcmode .edwrap{padding-top:10px}
+#vEd.pcmode #rulH{top:-10px}
+.bars.top{display:flex;align-items:center;flex-wrap:wrap;gap:0;padding-top:1px!important;padding-bottom:1px!important;min-height:0}
+.bars.top .bar{padding:2px 0;gap:1px;flex-wrap:nowrap;overflow:visible}
+.bars.top .bar+.bar{border-top:0;border-left:1px solid var(--line);margin-left:8px;padding-left:8px}
+.bars.top .fb{height:26px;min-width:26px;padding:0 5px;border-radius:6px;font-size:12px}
+.bars.top .fb svg{width:15px;height:15px}
+.bars.top .sb{height:22px;min-width:22px;padding:0 5px;border-radius:6px;font-size:10.5px;margin:0 1px}
+.bars.top .sb svg{width:12px;height:12px}
+.bars.top .vsep{height:16px}
+/* PC ancho: estilos a la derecha, fijos */
+.bars.side #stBar{position:fixed;right:16px;width:200px;flex-direction:column;align-items:stretch;gap:4px;border:1px solid var(--line);border-radius:12px;background:var(--chrome);padding:8px;margin:0;z-index:25;max-height:calc(100vh - 120px);overflow-y:auto}
+.bars.side #stBar .vsep{width:auto;height:1px;margin:3px 0}
+.bars.side #stBar .sb{justify-content:flex-start;gap:9px;height:30px;padding:0 9px;font-size:12px;margin:0}
+.bars.side #stBar .sb svg{width:14px;height:14px}
+.bars.side #stBar .sbn{display:inline;font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bars.side #stBar .sbi{min-width:16px;display:inline-flex;justify-content:center}
 </style>
 <style id="stylesCSS"></style>
 </head>
@@ -315,7 +339,7 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.4</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.5</div>
   </section>
 
   <!-- EDITOR -->
@@ -576,14 +600,16 @@ const styleById=id=>S.cfg.estilos.find(s=>s.id===id);
 function go(v){
   S.view=v;$$('.view').forEach(x=>x.classList.toggle('on',x.id===v));
   $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===({vSetD:'vSet',vTab:'vMesa'}[v]||v)));
-  const ed=v==='vEd',esc_=v==='vEsc';$('#nav').style.display=ed||esc_?'none':'flex';$('#bars').style.display=ed?'block':'none';
+  const ed=v==='vEd',esc_=v==='vEsc';$('#nav').style.display=ed||esc_?'none':'flex';$('#bars').style.display=ed?'':'none';
   $('#fab').style.display=v==='vLib'?'block':'none';if(v!=='vAj')S.ajDesde=v;if(v==='vSetD')renderSetD();
   if(!ed)renderAll();else colocarBarras();
 }
 function colocarBarras(){const b=$('#bars'),arriba=innerWidth>=1000;
-  if(arriba){if(b.parentNode!==$('#vEd'))$('#vEd').insertBefore(b,$('#edWrap'));b.classList.add('top');b.style.bottom='';
-    requestAnimationFrame(()=>{const L=$('#edTitle').getBoundingClientRect().left-$('#vEd').getBoundingClientRect().left;b.style.paddingLeft=Math.max(0,L)+'px';b.style.paddingRight='48px'})}
-  else{if(b.parentNode!==document.body)document.body.insertBefore(b,$('#fab'));b.classList.remove('top');b.style.paddingLeft='';b.style.paddingRight=''}}
+  if(arriba){if(b.parentNode!==$('#vEd'))$('#vEd').insertBefore(b,$('#edWrap'));b.classList.add('top');b.style.bottom='';$('#vEd').classList.add('pcmode');
+    requestAnimationFrame(()=>{const L=$('#edTitle').getBoundingClientRect().left-$('#vEd').getBoundingClientRect().left;b.style.paddingLeft=Math.max(0,L)+'px';b.style.paddingRight='24px';
+      const pg=$('#pgBox').getBoundingClientRect(),lado=innerWidth-Math.max(pg.right,$('#ed').getBoundingClientRect().right)>=236;
+      b.classList.toggle('side',lado);const st=$('#stBar');if(lado){st.style.top=(b.getBoundingClientRect().bottom+14)+'px'}else st.style.top=''})}
+  else{if(b.parentNode!==document.body)document.body.insertBefore(b,$('#fab'));b.classList.remove('top','side');$('#vEd').classList.remove('pcmode');b.style.paddingLeft='';b.style.paddingRight='';$('#stBar').style.top=''}}
 window.addEventListener('resize',()=>{if(S.view==='vEd')colocarBarras()});
 $$('#nav button').forEach(b=>b.onclick=()=>{if(b.dataset.v==='vSes')S.sesFiltro=null;go(b.dataset.v)});
 $$('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
@@ -845,7 +871,7 @@ function markActive(){const s=getSelection();if(!s.rangeCount)return;const n=s.a
   $$('#stBar .sb').forEach(b=>b.classList.toggle('act',act.has(b.dataset.s)))}
 
 function renderStyleBar(){
-  $('#stBar').innerHTML=S.cfg.estilos.filter(s=>s.enBarra).map((s,i)=>`${i===3?'<span class="vsep"></span>':''}<button class="sb" data-s="${s.id}" title="${esc(s.nombre)}" style="background:${soft(s.color,S.cfg.tema==='light'?.10:.15)};color:${forTheme(s.color)};${s.marco==='recuadro'?`outline:1.5px dashed ${forTheme(s.color)};outline-offset:-3px;`:''}">${icoHTML(s.icono)}</button>`).join('')+`<button class="sb" id="sbNew" style="background:var(--panel2);color:var(--mute)">+</button>`;
+  $('#stBar').innerHTML=S.cfg.estilos.filter(s=>s.enBarra).map((s,i)=>`${i===3?'<span class="vsep"></span>':''}<button class="sb" data-s="${s.id}" title="${esc(s.nombre)}" style="background:${soft(s.color,S.cfg.tema==='light'?.10:.15)};color:${forTheme(s.color)};${s.marco==='recuadro'?`outline:1.5px dashed ${forTheme(s.color)};outline-offset:-3px;`:''}"><span class="sbi">${icoHTML(s.icono)}</span><span class="sbn">${esc(s.nombre)}</span></button>`).join('')+`<button class="sb" id="sbNew" style="background:var(--panel2);color:var(--mute)"><span class="sbi">+</span><span class="sbn">Nuevo estilo</span></button>`;
   $$('#stBar .sb[data-s]').forEach(b=>{b.onmousedown=e=>e.preventDefault();b.onclick=()=>applyStyle(b.dataset.s);
     let lp;b.ontouchstart=()=>{lp=setTimeout(()=>{lp='x';editStyle(b.dataset.s)},650)};b.ontouchend=e=>{if(lp==='x'){e.preventDefault()}clearTimeout(lp)}});
   $('#sbNew').onmousedown=e=>e.preventDefault();$('#sbNew').onclick=()=>editStyle(null);
