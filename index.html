@@ -134,15 +134,23 @@ input:focus,textarea:focus{border-color:var(--pink)}
 .pgl{position:absolute;border-top:1.5px dashed var(--faint);height:0}
 .pgl span{position:absolute;right:0;top:-9px;font-size:10px;line-height:16px;background:var(--bg);color:var(--mute);padding:0 7px;border-radius:8px;border:1px solid var(--line)}
 #vEd.pagmode{max-width:1200px}
-#vEd.pagmode .edwrap{background:#3b3740}
+body.dark #vEd.pagmode .edwrap{background:var(--bg)}body.light #vEd.pagmode .edwrap{background:var(--panel2)}
 #vEd.pagmode #pgBox{width:max-content;margin:0 auto;padding-left:28px}
 #vEd.pagmode #rulH{display:block;position:sticky;top:-30px;z-index:3;margin-bottom:6px}
 #vEd.pagmode #rulV{display:block;position:absolute;left:0}
-#vEd.pagmode #ed{max-width:none;margin:0;box-sizing:border-box;background:#fff;box-shadow:0 3px 18px rgba(0,0,0,.45);caret-color:#FF3E8E}
+#vEd.pagmode #ed{max-width:none;margin:0;box-sizing:border-box;caret-color:var(--pink)}
+body.dark #vEd.pagmode #ed{background:var(--bg);border:1px solid var(--line);color:var(--text)!important}
+body.light #vEd.pagmode #ed{background:#fff;box-shadow:0 3px 18px rgba(30,20,40,.18);color:#111!important}
 #vEd.pagmode #ed p,#vEd.pagmode #ed li{margin:0 0 .35em}
-#vEd.pagmode .pgl{border-top:1.5px dashed #b9b2bf}
-#vEd.pagmode .pgl span{background:#fff;color:#8a8290;border-color:#e2dee5;right:6px}
+#vEd.pagmode .pgl span{right:6px}
+body.light #vEd.pagmode .pgl{border-top:1.5px dashed #b9b2bf}
+body.light #vEd.pagmode .pgl span{background:#fff;color:#8a8290;border-color:#e2dee5}
 #gPill{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;gap:8px;align-items:center;background:var(--pink);color:#fff;font-weight:700;font-size:13.5px;padding:11px 18px;border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.45);white-space:nowrap}
+#edSave.ok{color:var(--green)}
+*{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:8px;border:2px solid transparent;background-clip:padding-box}::-webkit-scrollbar-thumb:hover{background:var(--faint);background-clip:padding-box}
+html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;background:#fff}
 </style>
 <style id="stylesCSS"></style>
 </head>
@@ -299,7 +307,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.0</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.1</div>
   </section>
 
   <!-- EDITOR -->
@@ -310,6 +318,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
         <input id="edTitle" placeholder="Título del texto">
         <div id="edStats"></div>
       </div>
+      <button class="ib" id="edSave" aria-label="Guardar"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8 4v5h7V4M8 20v-6h8v6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></button>
       <button class="ib" id="edSes" aria-label="Sesión de escritura" style="border-radius:10px"></button>
       <button class="ib" id="edTheme"></button>
       <button class="ib" id="edInfo"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg></button>
@@ -474,7 +483,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
    let changed=false;const tomb={...this.tomb};Object.entries(R.tomb||{}).forEach(([k,v])=>{if(!tomb[k]||tomb[k]<v)tomb[k]=v});this.tomb=tomb;
    for(const col of ['textos','ideas','setlists','pases']){const L=S[col],RR=R[col]||{};
      for(const id of new Set([...Object.keys(L),...Object.keys(RR)])){
-       if(S.editing===id&&col==='textos'&&L[id]){continue}
+       if(S.editing===id&&col==='textos'&&L[id]){if(Date.now()-ultTecla<5000)continue;flushSave()}
        const a=L[id],b=RR[id];let w=!a?b:!b?a:((b.editado||0)>(a.editado||0)?b:a);
        if(w&&tomb[id]&&tomb[id]>=(w.editado||0))w=null;
        if(w!==a){changed=true;if(w)L[id]=w;else delete L[id]}
@@ -484,6 +493,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
    if(R.inicio&&(R.inicio.editado||0)>((S.inicio&&S.inicio.editado)||0)){S.inicio=R.inicio;IDB.set('inicio',S.inicio);changed=true}
    if(R.fotoMap)this.meta.fotoMap={...(R.fotoMap||{}),...(this.meta.fotoMap||{})};
    if(changed&&S.view!=='vEd')renderAll();
+   if(changed)vivoTrasSync();
    if(S.editing&&!S.textos[S.editing]){closeEditor();toast('Este texto se ha borrado en otro aparato')}
  },
  /* foto a texto con el lector de Google Drive */
@@ -543,10 +553,10 @@ function buildStyleCSS(){
     if(s.marco==='subrayado')css+=`${sel}{text-decoration:underline dashed ${c};text-underline-offset:4px}`;
     if(s.antes)css+=`${sel}::before{content:${JSON.stringify(s.antes)}}`;if(s.despues)css+=`${sel}::after{content:${JSON.stringify(s.despues)}}`;
   });
-  {const tm=S.cfg.tema;S.cfg.tema='light';S.cfg.estilos.forEach(st=>{css+=`.pvdoc [data-st="${st.id}"],#vEd.pagmode #ed [data-st="${st.id}"]{color:${forTheme(st.color)}}`});S.cfg.tema=tm}
+  {const tm=S.cfg.tema;S.cfg.tema='light';S.cfg.estilos.forEach(st=>{css+=`.pvdoc [data-st="${st.id}"],body.light #vEd.pagmode #ed [data-st="${st.id}"]{color:${forTheme(st.color)}}`});S.cfg.tema=tm}
   $('#stylesCSS').textContent=css;
 }
-function applyTheme(){document.body.className=S.cfg.tema==='light'?'light':'dark';
+function applyTheme(){if(S.view==='vEd')setTimeout(()=>{try{pagVista()}catch(e){}},0);document.body.className=S.cfg.tema==='light'?'light':'dark';document.documentElement.className=document.body.className;
   $('#edTheme').innerHTML=S.cfg.tema==='light'?'<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="currentColor"/></svg>':'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   $$('#themeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.cfg.tema));
 }
@@ -695,12 +705,12 @@ function renderMesa(){
   const verChipCarp=!(dentro&&scope==='aqui');
   $('#mList').innerHTML=list.length?list.map(t=>`
     <div class="card" data-id="${t.id}" style="cursor:pointer">
-      <div class="row"><div class="t">${esc(t.titulo||'Sin título')}</div><span style="display:flex;gap:6px;align-items:center">${estChip(t.estado)}<button class="ib" data-mv="${t.id}" aria-label="Mover a carpeta" style="width:30px;height:30px;color:var(--mute)">${ICO_CARP.replace(/22/g,'18')}</button></span></div>
+      <div class="row"><div class="t">${esc(t.titulo||'Sin título')}</div><span style="display:flex;gap:6px;align-items:center">${estChip(t.estado)}<button class="ib" data-mm="${t.id}" aria-label="Opciones del texto" style="width:32px;height:32px;color:var(--mute)"><svg viewBox="0 0 24 24" width="20" height="20"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg></button></span></div>
       <div class="s" style="margin:6px 0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(strip(t.html).slice(0,160))||'Vacío'}</div>
       <div class="row"><div>${verChipCarp&&carpeta(t.carpeta)?`<span class="chip" style="border-color:var(--pink);color:var(--pink)">📁 ${esc(carpeta(t.carpeta).nombre)}</span>`:''}${(t.etiquetas||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div><div class="s" style="white-space:nowrap">${t.stats?`${t.stats.remates} rem · ${durTxt(minOf(t.stats))} · `:''}${fecha(t.editado)}</div></div>
       <div class="row" style="margin-top:4px"><span class="s" style="color:var(--amber)">${t.stats&&t.stats.pend?`${t.stats.pend} pendiente${t.stats.pend>1?'s':''}`:''}</span>${notaChip(t.id)}</div>
     </div>`).join(''):`<div class="empty">${buscando?'Nada coincide con la búsqueda.'+(dentro&&scope==='aqui'?'<br>Prueba «En toda la Mesa».':''):dentro?'Esta carpeta está vacía.<br>Crea un texto con «+ Nuevo» o mueve uno aquí con el icono de carpeta.':cs.length?'No hay textos sueltos: todos están en carpetas.':'Aún no hay textos.<br>Crea uno nuevo o pasa una idea desde la Libreta.'}</div>`;
-  $$('#mList .card').forEach(c=>c.onclick=e=>{const mv=e.target.closest('[data-mv]');if(mv){e.stopPropagation();return moverTexto(S.textos[mv.dataset.mv])}openEditor(c.dataset.id)});
+  $$('#mList .card').forEach(c=>c.onclick=e=>{const mm=e.target.closest('[data-mm]');if(mm){e.stopPropagation();return menuTexto(S.textos[mm.dataset.mm])}openEditor(c.dataset.id)});
 }
 const strip=h=>{const d=document.createElement('div');d.innerHTML=(h||'').replace(/<\/(p|li|div)>/g,' </$1>');return d.textContent.replace(/\s+/g,' ').trim()};
 const durTxt=m=>{const s=Math.round((m||0)*60);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
@@ -845,7 +855,9 @@ function cycleAlign(){const bs=selBlocks();const cur=bs[0]&&bs[0].style.textAlig
 function cycleLH(){const bs=selBlocks();const cur=parseFloat(bs[0]&&bs[0].style.lineHeight)||1.6;const nx=cur<1.5?1.6:cur<1.9?2:cur<2.4?2.5:1.2;bs.forEach(b=>b.style.lineHeight=nx===1.6?'':nx);toast('Interlineado: '+String(nx).replace('.',','))}
 function indent(d){selBlocks().forEach(b=>{const cur=parseFloat(b.style.marginLeft)||0;const nx=Math.max(0,Math.min(6,cur+d*1.5));b.style.marginLeft=nx?nx+'em':''})}
 $('#edFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const d=await shrink(f);const id='f'+uid();await Store.putFoto(id,d);restoreSel();if(H.t)hPush();document.execCommand('insertHTML',false,`<p><img data-foto="${id}" src="${d}"></p><p><br></p>`);e.target.value='';hPush();scheduleSave()};
+$('#edSave').onclick=menuGuardar;
 document.addEventListener('keydown',e=>{if(S.view!=='vEd'||!(e.ctrlKey||e.metaKey))return;
+  if(e.key==='s'||e.key==='S'){e.preventDefault();if(e.shiftKey)guardarComo();else guardarTexto();return}
   if(document.activeElement===ed&&(e.key==='z'||e.key==='Z'||e.key==='y')){e.preventDefault();hGo(e.key==='y'||e.shiftKey?1:-1);return}const n=parseInt(e.key);if(n>=1&&n<=9){const ss=S.cfg.estilos.filter(s=>s.enBarra);if(ss[n-1]){e.preventDefault();applyStyle(ss[n-1].id)}}});
 
 /* barras pegadas al teclado */
@@ -904,7 +916,7 @@ $('#edInfo').onclick=()=>{const t=S.textos[S.editing];if(!t)return;flushSave();
   $('#fPag').onclick=()=>verPagina(t);$('#fPr').onclick=()=>{closeSheet();imprimirTexto(t)};
   $('#fCarp').onclick=()=>{t.etiquetas=ftb.get();Store.put('textos',t);moverTexto(t,()=>$('#edInfo').click())};
   $('#fOk').onclick=()=>{marcaAvance(est0,t.estado);t.etiquetas=ftb.get();t.editado=now();Store.put('textos',t);closeSheet()};
-  $('#fDel').onclick=()=>confirmBox('¿Borrar «'+(t.titulo||'Sin título')+'»? No se puede deshacer.','Borrar',()=>{delete S.textos[t.id];Store.del('textos',t.id);Object.values(S.ideas).forEach(i=>{if(i.pasada===t.id){delete i.pasada;Store.put('ideas',i)}});S.editing=null;go('vMesa')});
+  $('#fDel').onclick=()=>borrarTexto(t,()=>{closeSheet();go('vMesa')});
 };
 
 /* ============ setlists y pases ============ */
@@ -1136,7 +1148,7 @@ function renderEsc(){
    ${cuerpo}
    <div style="margin-top:30px;padding-top:14px;border-top:1px solid #221F26;color:#5d5763;font-size:13px">${nx?'Siguiente':'Es el último'}</div>
    ${nx?`<div style="font-size:clamp(18px,5vw,26px);font-weight:700;color:#7d7684;margin:4px 0 20px">${esc(nx.titulo||'Sin título')}</div>`:''}`;
-  $('#escBody').scrollTop=0;
+  $('#escBody').scrollTop=0;ESC.htmlVisto=t.html+'|'+t.titulo;
   $('#escModo').textContent=modo==='guion'?'Remates':'Guion';
   drawRot();
   if(ESC.started){$('#escNext').textContent=nx?'Siguiente chiste':'Terminar el pase';$('#escPrev').style.visibility=ESC.i>0?'visible':'hidden'}
@@ -1305,6 +1317,47 @@ async function verAnalisis(pid,nuevo){
 async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
 
+/* ============ acciones de texto: borrar, nueva versión, guardar como ============ */
+function borrarTexto(t,despues){confirmBox('¿Borrar «'+(t.titulo||'Sin título')+'»? No se puede deshacer.','Borrar',()=>{delete S.textos[t.id];Store.del('textos',t.id);Object.values(S.ideas).forEach(i=>{if(i.pasada===t.id){delete i.pasada;Store.put('ideas',i)}});if(S.editing===t.id)S.editing=null;despues?despues():renderMesa();toast('Texto borrado')})}
+function baseTitulo(x){return (x||'Sin título').replace(/\s*·\s*v\d+$/,'').replace(/\s*\(copia\)$/,'')}
+function duplicarTexto(t,titulo,esVersion){const raiz=esVersion?(t.versionDe||t.id):null;
+  const n=newTexto(titulo);Object.assign(n,{html:t.html,etiquetas:[...(t.etiquetas||[])],categoria:t.categoria,estado:esVersion?'borrador':t.estado});if(t.carpeta)n.carpeta=t.carpeta;else delete n.carpeta;
+  if(raiz){n.versionDe=raiz;const vs=Object.values(S.textos).filter(x=>x.id===raiz||x.versionDe===raiz);const num=Math.max(1,...vs.map(x=>x.version||1))+1;n.version=num;const r=S.textos[raiz];if(r&&!r.version){r.version=1;Store.put('textos',r)}n.titulo=baseTitulo(t.titulo)+' · v'+num}
+  n.stats=t.stats?{...t.stats}:null;n.editado=now();Store.put('textos',n);return n}
+function nuevaVersion(t,abrir){const n=duplicarTexto(t,'',true);toast('Creada «'+n.titulo+'»');if(abrir)openEditor(n.id);else renderMesa();return n}
+function menuTexto(t){const vs=Object.values(S.textos).filter(x=>(t.versionDe||t.id)&&(x.id===(t.versionDe||t.id)||x.versionDe===(t.versionDe||t.id))).length;
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:2px">${esc(t.titulo||'Sin título')}</div><div class="s" style="margin-bottom:12px">${fecha(t.editado)}${vs>1?` · ${vs} versiones`:''}</div>
+   <button class="ftile" id="mmO" style="width:100%;margin-bottom:8px">✎<span>Abrir</span></button>
+   <button class="ftile" id="mmV" style="width:100%;margin-bottom:8px">⧉<span>Nueva versión <span class="s">(copia para trabajar sobre ella; el original no se toca)</span></span></button>
+   <button class="ftile" id="mmC" style="width:100%;margin-bottom:8px">${ICO_CARP}<span>Mover a carpeta</span></button>
+   <button class="ftile" id="mmB" style="width:100%;color:#FF6B6B">🗑<span>Borrar</span></button>`);
+  $('#mmO').onclick=()=>{closeSheet();openEditor(t.id)};$('#mmV').onclick=()=>{closeSheet();nuevaVersion(t,false)};
+  $('#mmC').onclick=()=>moverTexto(t);$('#mmB').onclick=()=>{closeSheet();borrarTexto(t)}}
+function guardarTexto(){flushSave();Store.syncSoon(300);const el=$('#edSave');if(el){el.classList.add('ok');setTimeout(()=>el.classList.remove('ok'),1200)}toast('Guardado'+(Store.hasToken()?' y sincronizando':''))}
+function guardarComo(){flushSave();const t=S.textos[S.editing];if(!t)return;
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:10px">Guardar como…</div>
+   <input id="gcN" value="${esc(baseTitulo(t.titulo)+' (copia)')}" placeholder="Título de la copia">
+   <div class="s" style="margin-top:8px;line-height:1.45">Se crea un texto nuevo con este contenido y lo abres. El original se queda como estaba.</div>
+   <button class="ftile" id="gcV" style="width:100%;margin-top:12px">⧉<span>O mejor: guardarlo como <b>nueva versión</b> de este texto</span></button>
+   <div class="row" style="margin-top:12px"><button class="btn ghost" style="flex:1" id="gcX">Cancelar</button><button class="btn" style="flex:1" id="gcY">Guardar copia</button></div>`);
+  setTimeout(()=>{$('#gcN').focus();$('#gcN').select()},60);
+  $('#gcX').onclick=closeSheet;$('#gcV').onclick=()=>{closeSheet();nuevaVersion(t,true)};
+  $('#gcY').onclick=()=>{const v=$('#gcN').value.trim();if(!v)return toast('Pon un título');closeSheet();const n=duplicarTexto(t,v,false);openEditor(n.id);toast('Guardado como «'+v+'»')}}
+function menuGuardar(){openSheet(`<div class="grab"></div><div class="s" style="margin-bottom:10px;line-height:1.45">La app guarda sola mientras escribes. Aun así puedes forzarlo o guardar una copia.</div>
+   <button class="ftile" id="mgG" style="width:100%;margin-bottom:8px">💾<span>Guardar ahora <span class="s">(Ctrl+S)</span></span></button>
+   <button class="ftile" id="mgC" style="width:100%">⧉<span>Guardar como… <span class="s">(Ctrl+Mayús+S)</span></span></button>`);
+  $('#mgG').onclick=()=>{closeSheet();guardarTexto()};$('#mgC').onclick=guardarComo}
+
+/* ============ trabajo a la vez en dos aparatos ============ */
+let ultTecla=0;ed.addEventListener('input',()=>{ultTecla=Date.now()});
+function vivoTrasSync(){
+  if(S.view==='vEd'&&S.editing){const t=S.textos[S.editing];if(!t){return}
+    const c=ed.cloneNode(true);c.querySelectorAll('img[data-foto]').forEach(i=>i.removeAttribute('src'));c.querySelectorAll('span[data-st]').forEach(x=>{if(!x.textContent.replace(/\u200b/g,''))x.remove()});const actual=c.innerHTML.replace(/\u200b/g,'');
+    if(t.html!==actual&&Date.now()-ultTecla>5000&&!(document.activeElement===ed&&document.hasFocus()&&Date.now()-ultTecla<20000)){const sc=$('#edWrap').scrollTop;ed.innerHTML=t.html||'<p><br></p>';hydrateImgs(ed);if($('#edTitle').value!==t.titulo)$('#edTitle').value=t.titulo||'';$('#edWrap').scrollTop=sc;updateStats();toast('Texto actualizado desde el otro aparato')}}
+  if(S.view==='vEsc'&&typeof ESC!=='undefined'&&ESC.s){const ids=escItems(),t=S.textos[ids[ESC.i]];if(t&&ESC.htmlVisto!==t.html+'|'+t.titulo){const b=$('#escBody'),sc=b.scrollTop;renderEsc();b.scrollTop=sc;toast('Texto actualizado desde el otro aparato')}}}
+setInterval(()=>{if(Store.hasToken()&&!document.hidden&&!Store.syncing&&navigator.onLine&&(S.view==='vEsc'||S.view==='vEd'||S.view==='vIni'||S.view==='vMesa'||S.view==='vSetD'))Store.sync()},15000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Store.hasToken())Store.syncSoon(300)});
+window.addEventListener('focus',()=>{if(Store.hasToken())Store.syncSoon(300)});
 /* ============ aviso de reconexión con Google ============ */
 function pillSync(){let b=$('#gPill');const ver=Store.meta&&Store.meta.conectado&&!Store.hasToken()&&navigator.onLine&&!['vEd','vEsc'].includes(S.view)&&!document.body.classList.contains('stage');
   if(!ver){b&&b.remove();return}
@@ -1356,16 +1409,17 @@ function renderPagAj(){const box=$('#pagBox');if(!box)return;const f=pag();
   box.querySelectorAll('[data-k] button').forEach(b=>b.onclick=()=>{const k=b.parentNode.dataset.k,v=b.dataset.v;S.cfg.pag=Object.assign(pag(),{[k]:isNaN(+v)?v:+v});Store.cfg();renderPagAj()})}
 
 /* ============ editor como página: reglas y saltos ============ */
-function rulerH(f){const [W]=PAG_TAM[f.tam],w=W*CM,m=f.marg*CM;let t='';
-  for(let i=0;i<=W*4;i++){const x=i*CM/4,big=i%4===0,mid=i%2===0;t+=`<line x1="${x}" x2="${x}" y1="${big?8:mid?13:16}" y2="22" stroke="#6e6874" stroke-width="${big?1:.7}"/>`;if(big&&i>0&&i<W*4)t+=`<text x="${x}" y="8" font-size="8" text-anchor="middle" fill="#6e6874" font-family="Inter,Arial">${i/4}</text>`}
-  return `<svg width="${w}" height="22" style="display:block"><rect width="${w}" height="22" fill="#f4f2f5"/><rect width="${m}" height="22" fill="#d6d1da"/><rect x="${w-m}" width="${m}" height="22" fill="#d6d1da"/>${t}</svg>`}
-function rulerV(f,hTot){const ph=(PAG_TAM[f.tam][1]-2*f.marg)*CM,m=f.marg*CM;let t='';
+function rulCol(){const d=S.cfg.tema!=='light';return d?{bg:'#18161B',mg:'#221F26',tk:'#6d6574',tx:'#9C95A3'}:{bg:'#f4f2f5',mg:'#d6d1da',tk:'#6e6874',tx:'#6e6874'}}
+function rulerH(f){const C=rulCol();const [W]=PAG_TAM[f.tam],w=W*CM,m=f.marg*CM;let t='';
+  for(let i=0;i<=W*4;i++){const x=i*CM/4,big=i%4===0,mid=i%2===0;t+=`<line x1="${x}" x2="${x}" y1="${big?8:mid?13:16}" y2="22" stroke="${C.tk}" stroke-width="${big?1:.7}"/>`;if(big&&i>0&&i<W*4)t+=`<text x="${x}" y="8" font-size="8" text-anchor="middle" fill="${C.tx}" font-family="Inter,Arial">${i/4}</text>`}
+  return `<svg width="${w}" height="22" style="display:block"><rect width="${w}" height="22" fill="${C.bg}"/><rect width="${m}" height="22" fill="${C.mg}"/><rect x="${w-m}" width="${m}" height="22" fill="${C.mg}"/>${t}</svg>`}
+function rulerV(f,hTot){const C=rulCol();const ph=(PAG_TAM[f.tam][1]-2*f.marg)*CM,m=f.marg*CM;let t='';
   const pages=Math.max(1,Math.ceil((hTot-2*m)/ph-0.001));
   for(let k=0;k<pages;k++){const T=k*ph,y0=k===0?0:m+k*ph,y1=Math.min(hTot,m+(k+1)*ph+(k===pages-1?m:0));
     if(k>0)t+=`<rect y="${y0-1}" width="22" height="2" fill="#FF3E8E"/><text x="12" y="${y0+11}" font-size="9" text-anchor="middle" fill="#FF3E8E" font-family="Inter,Arial" font-weight="800">${k+1}</text>`;
     for(let i=1;;i++){const y=T+i*CM/4;if(y>=y1-2)break;if(y<=y0+(k>0?15:0))continue;const big=i%4===0,mid=i%2===0;
-      t+=`<line y1="${y}" y2="${y}" x1="${big?9:mid?14:17}" x2="22" stroke="#6e6874" stroke-width="${big?1:.7}"/>`;if(big)t+=`<text x="6" y="${y+3}" font-size="8" text-anchor="middle" fill="#6e6874" font-family="Inter,Arial">${i/4}</text>`}}
-  return `<svg width="22" height="${hTot}" style="display:block"><rect width="22" height="${hTot}" fill="#f4f2f5"/><rect width="22" height="${m}" fill="#d6d1da"/><rect y="${hTot-m}" width="22" height="${m}" fill="#d6d1da"/>${t}</svg>`}
+      t+=`<line y1="${y}" y2="${y}" x1="${big?9:mid?14:17}" x2="22" stroke="${C.tk}" stroke-width="${big?1:.7}"/>`;if(big)t+=`<text x="6" y="${y+3}" font-size="8" text-anchor="middle" fill="${C.tx}" font-family="Inter,Arial">${i/4}</text>`}}
+  return `<svg width="22" height="${hTot}" style="display:block"><rect width="22" height="${hTot}" fill="${C.bg}"/><rect width="22" height="${m}" fill="${C.mg}"/><rect y="${hTot-m}" width="22" height="${m}" fill="${C.mg}"/>${t}</svg>`}
 function pagVista(){if(S.view!=='vEd')return;const f=pag(),[W,H]=PAG_TAM[f.tam],m=f.marg*CM,ph=(H-2*f.marg)*CM;
   const pc=innerWidth>=1000&&S.cfg.pagRegla!==false,lin=S.cfg.pagLineas!==false;
   $('#vEd').classList.toggle('pagmode',pc);const L=$('#pgLines');L.innerHTML='';
