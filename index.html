@@ -156,6 +156,9 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
 .mact button:hover{color:var(--text);border-color:var(--faint);background:var(--panel2)}
 .mact button.del:hover{color:#FF6B6B;border-color:#FF6B6B}
 @media(min-width:900px){.mact{display:flex}.mdots{display:none!important}}
+.bars.top{position:static;border-top:0;border-bottom:1px solid var(--line);flex:none}
+.bars.top .bar{padding-left:0;padding-right:0;flex-wrap:wrap}
+.bars.top .bar+.bar{border-top:1px solid var(--line)}
 </style>
 <style id="stylesCSS"></style>
 </head>
@@ -312,7 +315,7 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.3</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.4</div>
   </section>
 
   <!-- EDITOR -->
@@ -325,6 +328,7 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       </div>
       <button class="ib" id="edSave" aria-label="Guardar"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8 4v5h7V4M8 20v-6h8v6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></button>
       <button class="ib" id="edSes" aria-label="Sesión de escritura" style="border-radius:10px"></button>
+      <button class="ib" id="edCfg" aria-label="Estilos y formato de página" title="Estilos de texto y formato de página"><svg viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="17" r="2.3" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
       <button class="ib" id="edTheme"></button>
       <button class="ib" id="edInfo"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></svg></button>
     </div>
@@ -574,11 +578,17 @@ function go(v){
   $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===({vSetD:'vSet',vTab:'vMesa'}[v]||v)));
   const ed=v==='vEd',esc_=v==='vEsc';$('#nav').style.display=ed||esc_?'none':'flex';$('#bars').style.display=ed?'block':'none';
   $('#fab').style.display=v==='vLib'?'block':'none';if(v!=='vAj')S.ajDesde=v;if(v==='vSetD')renderSetD();
-  if(!ed)renderAll();
+  if(!ed)renderAll();else colocarBarras();
 }
+function colocarBarras(){const b=$('#bars'),arriba=innerWidth>=1000;
+  if(arriba){if(b.parentNode!==$('#vEd'))$('#vEd').insertBefore(b,$('#edWrap'));b.classList.add('top');b.style.bottom='';
+    requestAnimationFrame(()=>{const L=$('#edTitle').getBoundingClientRect().left-$('#vEd').getBoundingClientRect().left;b.style.paddingLeft=Math.max(0,L)+'px';b.style.paddingRight='48px'})}
+  else{if(b.parentNode!==document.body)document.body.insertBefore(b,$('#fab'));b.classList.remove('top');b.style.paddingLeft='';b.style.paddingRight=''}}
+window.addEventListener('resize',()=>{if(S.view==='vEd')colocarBarras()});
 $$('#nav button').forEach(b=>b.onclick=()=>{if(b.dataset.v==='vSes')S.sesFiltro=null;go(b.dataset.v)});
 $$('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
-$('#iniAj').onclick=()=>go('vAj');$('#ajBack').onclick=()=>go(S.ajDesde||'vIni');
+$('#iniAj').onclick=()=>go('vAj');$('#ajBack').onclick=()=>{const d=S.ajDesde||'vIni';go(d);if(d==='vEd'){renderStyleBar();renderFmtBar();updateStats();try{pagVista()}catch(e){}}};
+$('#edCfg').onclick=()=>{flushSave();S.ajTab='t';go('vAj');window.scrollTo(0,0)};
 $('#fab').onclick=()=>{go('vLib');setTimeout(()=>$('#qText').focus(),50)};
 
 /* ============ render ============ */
@@ -867,7 +877,7 @@ document.addEventListener('keydown',e=>{if(S.view!=='vEd'||!(e.ctrlKey||e.metaKe
   if(document.activeElement===ed&&(e.key==='z'||e.key==='Z'||e.key==='y')){e.preventDefault();hGo(e.key==='y'||e.shiftKey?1:-1);return}const n=parseInt(e.key);if(n>=1&&n<=9){const ss=S.cfg.estilos.filter(s=>s.enBarra);if(ss[n-1]){e.preventDefault();applyStyle(ss[n-1].id)}}});
 
 /* barras pegadas al teclado */
-function placeBars(){const vv=window.visualViewport;if(!vv)return;const off=window.innerHeight-(vv.height+vv.offsetTop);$('#bars').style.bottom=Math.max(0,off)+'px'}
+function placeBars(){const vv=window.visualViewport;if(!vv||$('#bars').classList.contains('top'))return;const off=window.innerHeight-(vv.height+vv.offsetTop);$('#bars').style.bottom=Math.max(0,off)+'px'}
 if(window.visualViewport){visualViewport.addEventListener('resize',placeBars);visualViewport.addEventListener('scroll',placeBars)}
 ed.addEventListener('focus',()=>setTimeout(placeBars,300));
 
