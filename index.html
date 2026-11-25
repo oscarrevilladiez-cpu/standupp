@@ -307,6 +307,11 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       <div class="s" style="margin-bottom:10px">Instala la app en este aparato para abrirla con su icono, a pantalla completa y sin conexión.</div>
       <button class="btn" id="installBtn" style="width:100%">Instalar stand UPP comedy</button>
     </div>
+    <div class="card">
+      <div class="lbl" style="margin-top:0">Ayuda</div>
+      <div class="s" style="margin-bottom:10px;line-height:1.5">Todo lo que hace la app, paso a paso: instalarla, conectar Google, la Libreta, la Mesa, el editor, los setlists, el modo escenario y más.</div>
+      <div class="row"><a class="btn sm" href="manual.pdf" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none">Abrir el manual (PDF)</a><a class="btn ghost sm" href="manual.pdf" download="Manual stand UPP comedy.pdf" style="flex:1;text-align:center;text-decoration:none">Descargar</a></div>
+    </div>
     </div>
     <div id="ajT">
     <div class="card">
@@ -339,7 +344,7 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.6</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.7</div>
   </section>
 
   <!-- EDITOR -->
@@ -1854,7 +1859,7 @@ function bloqueMotivacion(){const o=obj();if(!o.activo)return '';const t=diaTot(
     ${anillo(o.minDia?m/o.minDia:0,104,Math.floor(m),o.minDia?`de ${o.minDia} min`:'min hoy')}
     <div style="flex:1;min-width:0"><div class="lbl" style="margin:0 0 4px">Hoy</div>
       <div class="t" style="font-size:15px">${!o.minDia?'Escribiendo hoy':m>=o.minDia?'¡Objetivo cumplido!':`Te faltan ${Math.ceil(o.minDia-m)} min`}</div>
-      <div class="s" style="margin:4px 0 8px">${t.ideas} de ${o.ideasDia} ideas · ${t.pal} palabras nuevas</div>
+      <div class="s" style="margin:4px 0 8px">${t.ideas} de ${o.ideasDia} ideas · ${Math.round(t.pal)} palabras nuevas</div>
       <span class="chip on" style="margin:0">${ra?`Racha · ${ra} día${ra>1?'s':''}`:'Empieza tu racha hoy'}</span></div></div>
    <div class="card"><div class="row" style="margin-bottom:8px"><div class="lbl" style="margin:0">Últimas 16 semanas</div><span class="s">1 comodín por semana</span></div>${calorHTML(16)}</div>
    <div class="card"><div class="row" style="margin-bottom:8px"><div class="lbl" style="margin:0">Repertorio cerrado</div><div class="t">${durTxt(rep)} <span class="s">/ ${o.repertorio} min</span></div></div>
