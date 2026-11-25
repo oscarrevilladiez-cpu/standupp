@@ -344,7 +344,7 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.7</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.8</div>
   </section>
 
   <!-- EDITOR -->
@@ -1098,10 +1098,17 @@ function renderSes(){
 }
 function abrirSesion(pid){const p=S.pases[pid];if(!p)return;if(paseTipo(p)==='ensayo')verEnsayo(pid,false);else verAnalisis(pid,false)}
 $('#newSes').onclick=()=>{const sets=Object.values(S.setlists).filter(s=>(s.items||[]).some(id=>S.textos[id])).sort((a,b)=>(b.editado||0)-(a.editado||0));
-  if(!sets.length)return confirmBox('Para salir a escena necesitas un setlist con textos. ¿Crear uno ahora?','Crear setlist',()=>{go('vSet');editSetInfo(null)});
-  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:4px">¿Con qué setlist?</div><div class="s" style="margin-bottom:12px">Se importa tal como está ahora; si luego cambias el setlist, esta sesión no cambia.</div>
-   ${sets.map(s=>`<button class="card row" data-s="${s.id}" style="width:100%;text-align:left"><span style="min-width:0"><span class="t" style="display:block">${esc(s.nombre||'Setlist sin nombre')}</span><span class="s">${(s.items||[]).length} textos · ${durTxt(setDur(s))}${s.local?' · '+esc(s.local):''}</span></span><span style="color:var(--pink)">›</span></button>`).join('')}`);
-  $$('#sheet [data-s]').forEach(b=>b.onclick=()=>prepEscenario(S.setlists[b.dataset.s]))};
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:12px">Nueva sesión</div>
+   <button class="ftile" id="nsT" style="width:100%;margin-bottom:8px">🎤<span><b>Ensayar o actuar con un texto suelto</b><br><span class="s">Un bloque nuevo, sin montar un setlist</span></span></button>
+   <button class="ftile" id="nsV" style="width:100%;margin-bottom:14px">📹<span><b>Analizar las risas de un vídeo</b><br><span class="s">De una actuación que ya grabaste</span></span></button>
+   <div class="lbl">O con un setlist</div>
+   ${sets.length?sets.map(s=>`<button class="card row" data-s="${s.id}" style="width:100%;text-align:left"><span style="min-width:0"><span class="t" style="display:block">${esc(s.nombre||'Setlist sin nombre')}</span><span class="s">${(s.items||[]).length} textos · ${durTxt(setDur(s))}${s.local?' · '+esc(s.local):''}</span></span><span style="color:var(--pink)">›</span></button>`).join(''):`<div class="s">Aún no tienes setlists con textos.</div>`}`);
+  $$('#sheet [data-s]').forEach(b=>b.onclick=()=>prepEscenario(S.setlists[b.dataset.s]));
+  $('#nsV').onclick=analizarArchivo;
+  $('#nsT').onclick=()=>{const txs=Object.values(S.textos).filter(t=>t.estado!=='cementerio').sort((a,b)=>b.editado-a.editado);if(!txs.length)return toast('Aún no tienes textos');
+    openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:8px">¿Qué texto?</div><input id="nsB" placeholder="Buscar…" style="margin-bottom:8px"><div id="nsL">${txs.map(t=>`<button class="card row" data-t="${t.id}" style="width:100%;text-align:left;padding:10px 12px"><span style="min-width:0"><span class="t" style="display:block;font-size:14px">${esc(t.titulo||'Sin título')}</span><span class="s">${durTxt(minOf(statsOf(t)))} · ${ESTL[t.estado]}</span></span><span style="color:var(--pink)">›</span></button>`).join('')}</div>`);
+    $('#nsB').oninput=()=>{const q=$('#nsB').value.toLowerCase();$$('#nsL [data-t]').forEach(b=>b.style.display=b.textContent.toLowerCase().includes(q)?'':'none')};
+    $$('#nsL [data-t]').forEach(b=>b.onclick=()=>{const t=S.textos[b.dataset.t];prepEscenario({id:null,nombre:t.titulo||'Texto suelto',items:[t.id],local:'',ciudad:'',maxMin:null})})}};
 function puntuarPase(p,sug){
   const ids=paseItems(p).filter(id=>S.textos[id]);const notas={...(p.notas||{}),...(sug||{})};
   openSheet(`<div class="grab"></div><div class="row" style="margin-bottom:6px"><button class="s" id="puC">Cancelar</button><div class="t">¿Cómo fue cada chiste?</div><button class="s" style="color:var(--pink);font-weight:800" id="puS">Guardar</button></div>
@@ -1337,7 +1344,7 @@ async function verAnalisis(pid,nuevo){
      <canvas id="vaCv" style="width:100%;height:110px;display:block;background:#0E0D10;border-radius:8px;cursor:pointer"></canvas>
      <div class="row" style="margin-top:10px"><span class="s">Sensibilidad</span><input id="vaS" type="range" min="1.5" max="9" step=".5" value="${sens}" style="flex:1;padding:0;margin-left:10px;accent-color:var(--pink)"></div>
      <div class="s" style="margin-top:4px">Si marca risas donde no las hubo, baja la sensibilidad; si se le escapan, súbela.</div></div>`:`<div class="s" style="margin-bottom:8px">Esta actuación no se grabó: no hay curva de risas.</div>${paseItems(p).filter(id=>S.textos[id]).map(id=>`<div class="card row" style="padding:10px 12px"><span class="t" style="font-size:13.5px">${esc(S.textos[id].titulo||'Sin título')}</span>${p.notas&&p.notas[id]!=null?starsTxt(p.notas[id]):'<span class="s">sin nota</span>'}</div>`).join('')}`}
-   <div id="vaL"></div>
+   <div id="vaMk"></div><div id="vaL"></div>
    ${p.curva?`<button class="btn ghost sm" id="vaDelR" style="width:100%;margin-top:8px">Borrar las risas de este pase</button>`:''}
    ${p.grab?`<button class="btn ghost sm" id="vaDel" style="width:100%;margin-top:8px">Borrar la grabación${p.grab.driveId?' (también de Drive)':''}</button><div class="s" style="margin-top:4px;text-align:center">Las notas se conservan.</div>`:''}
    <button class="btn" id="vaP" style="width:100%;margin-top:8px">${nuevo?'Puntuar con estas sugerencias':'Ver / cambiar notas'}</button>`);
@@ -1350,19 +1357,94 @@ async function verAnalisis(pid,nuevo){
   if(p.grab){const blob=await getGrab(p);if(blob){const u=URL.createObjectURL(blob);$('#vaMedia').innerHTML=p.grab.tipo==='video'?`<video id="vaM" src="${u}" controls playsinline style="width:100%;border-radius:10px;margin-bottom:10px;background:#000"></video>`:`<audio id="vaM" src="${u}" controls style="width:100%;margin-bottom:10px"></audio>`}
     else $('#vaMedia').innerHTML=`<div class="s" style="margin-bottom:10px">La grabación está en otro aparato${p.grab.driveId?' o en Drive (conecta Google para escucharla)':''}.</div>`}
   const draw=()=>{if(!p.curva)return;const m=$('#vaM');drawCurva($('#vaCv'),p,sens,m?m.currentTime:null);
-    const {res}=resumenRisas(p,sens);
-    $('#vaL').innerHTML=Object.entries(p.segmentos||{}).map(([id,[a]])=>{const r=res[id],t=S.textos[id];return `<div class="card" style="padding:10px 12px;cursor:pointer" data-go="${a}"><div class="row"><div class="t" style="font-size:13.5px">${esc(t?t.titulo||'Sin título':'Texto borrado')}</div>${starsTxt(r.sug)}</div>
-      <div class="s" style="margin-top:3px">${mmss(r.dur)} en escena · ${r.n} risa${r.n===1?'':'s'} · ${Math.round(r.seg)} s de risa${t?' · estimado '+durTxt(minOf(statsOf(t))):''}</div></div>`}).join('');
+    const {res}=resumenRisas(p,sens);const nseg=Object.keys(p.segmentos||{}).length;
+    $('#vaL').innerHTML=(p.grab&&$('#vaM')?`<button class="btn ghost sm" id="vaMark" style="width:100%;margin:2px 0 10px">${nseg?'Cambiar las marcas':'Marcar en el vídeo dónde empieza cada parte'}${paseItems(p).length===1&&S.textos[paseItems(p)[0]]&&bloquesDe(S.textos[paseItems(p)[0]]).length>1?' (texto o bloques)':''}</button>`:'')+(!nseg?`<div class="s" style="margin-bottom:8px">Aún no hay partes marcadas: la curva muestra las risas del pase entero.</div>`:'')+Object.entries(p.segmentos||{}).map(([id,[a]])=>{const r=res[id],t=S.textos[id.split('#')[0]];return `<div class="card" style="padding:10px 12px;cursor:pointer" data-go="${a}"><div class="row"><div class="t" style="font-size:13.5px">${esc((p.segNombres&&p.segNombres[id])?(t?t.titulo+' · ':'')+p.segNombres[id]:(t?t.titulo||'Sin título':'Texto borrado'))}</div>${starsTxt(r.sug)}</div>
+      <div class="s" style="margin-top:3px">${mmss(r.dur)} en escena · ${r.n} risa${r.n===1?'':'s'} · ${Math.round(r.seg)} s de risa${t&&!(p.segNombres&&p.segNombres[id])?' · estimado '+durTxt(minOf(statsOf(t))):''}</div></div>`}).join('');
+    if($('#vaMark'))$('#vaMark').onclick=()=>marcarPartes(p,draw);
     $$('#vaL [data-go]').forEach(c=>c.onclick=()=>{const m=$('#vaM');if(m){m.currentTime=+c.dataset.go;m.play()}});};
   draw();
   if($('#vaS'))$('#vaS').oninput=()=>{sens=+$('#vaS').value;draw()};
   if($('#vaCv'))$('#vaCv').onclick=e=>{const m=$('#vaM');if(!m||!p.curva)return;const r=e.target.getBoundingClientRect();m.currentTime=(e.clientX-r.left)/r.width*(p.curva.L.length/(p.curva.hz||5));m.play()};
   if($('#vaM'))$('#vaM').ontimeupdate=()=>drawCurva($('#vaCv'),p,sens,$('#vaM').currentTime);
-  $('#vaP').onclick=()=>{let sug=null;if(p.curva){p.curva.sens=sens;S.cfg.sensRisa=sens;sug={};const {res}=resumenRisas(p,sens);Object.entries(res).forEach(([id,r])=>sug[id]=r.sug)}
+  $('#vaP').onclick=()=>{let sug=null;if(p.curva){p.curva.sens=sens;S.cfg.sensRisa=sens;sug={};const {res}=resumenRisas(p,sens);Object.entries(res).forEach(([id,r])=>{if(S.textos[id])sug[id]=r.sug})}
     puntuarPase(p,nuevo?sug:null)};
 }
 async function getGrab(p){let b=await IDB.get('grab:'+p.id);if(b)return b;
   if(p.grab&&p.grab.driveId&&Store.hasToken()){try{toast('Descargando la grabación…');b=await (await Store.api('files/'+p.grab.driveId+'?alt=media')).blob();await IDB.set('grab:'+p.id,b);return b}catch(e){}}return null}
+
+/* ============ analizar risas de un vídeo o audio ya grabado ============ */
+function fftPot(re){const n=re.length,im=new Float64Array(n);
+  for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){const t=re[i];re[i]=re[j];re[j]=t}}
+  for(let len=2;len<=n;len<<=1){const ang=-2*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang);
+    for(let i=0;i<n;i+=len){let cr=1,ci=0;for(let k=0;k<len/2;k++){const a=i+k,b=a+len/2,xr=re[b]*cr-im[b]*ci,xi=re[b]*ci+im[b]*cr;re[b]=re[a]-xr;im[b]=im[a]-xi;re[a]+=xr;im[a]+=xi;const t=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=t}}}
+  const p=new Float64Array(n/2);for(let k=0;k<n/2;k++)p[k]=re[k]*re[k]+im[k]*im[k];return p}
+async function curvaDeArchivo(file,prog){
+  const ab=await file.arrayBuffer();const off=new OfflineAudioContext(1,1,16000);
+  const buf=await new Promise((ok,ko)=>off.decodeAudioData(ab,ok,ko));
+  const sr=buf.sampleRate,n=buf.length,ch=buf.numberOfChannels,mono=new Float32Array(n);
+  for(let c=0;c<ch;c++){const d=buf.getChannelData(c);for(let i=0;i<n;i++)mono[i]+=d[i]/ch}
+  const hop=Math.round(sr/5),N=2048,win=new Float64Array(N);for(let i=0;i<N;i++)win[i]=.5-.5*Math.cos(2*Math.PI*i/(N-1));
+  const fr=Math.floor(n/hop),L=[],F=[],hzb=sr/N,a=Math.floor(300/hzb),b=Math.min(N/2,Math.floor(6000/hzb));
+  for(let f=0;f<fr;f++){const s=f*hop;let s2=0;for(let i=s;i<s+hop&&i<n;i++)s2+=mono[i]*mono[i];
+    const db=Math.max(-90,10*Math.log10(s2/hop+1e-12));
+    const re=new Float64Array(N);for(let i=0;i<N&&s+i<n;i++)re[i]=mono[s+i]*win[i];const pw=fftPot(re);
+    let lg=0,ar=0,m=0;for(let k=a;k<b;k++){const p=pw[k]+1e-12;lg+=Math.log(p);ar+=p;m++}
+    L.push(Math.round(db*10)/10);F.push(Math.round((m?Math.exp(lg/m)/(ar/m):0)*1000)/1000);
+    if(f%250===0){prog&&prog(f/fr);await new Promise(r=>setTimeout(r,0))}}
+  return {hz:5,L,F,sens:S.cfg.sensRisa||4,dur:n/sr}}
+function bloquesDe(t){const d=document.createElement('div');d.innerHTML=t.html||'';const out=[];let cur=null;
+  [...d.children].forEach(el=>{if(el.getAttribute('data-st')==='titulo'){cur={nombre:el.textContent.trim()||'Bloque'};out.push(cur)}else if(!cur&&el.textContent.trim()){cur={nombre:'Inicio'};out.push(cur)}});return out}
+function partesDe(p){if(p.porBloques){const id=paseItems(p)[0],t=S.textos[id];return t?bloquesDe(t).map((b,k)=>({key:id+'#'+k,nombre:b.nombre})):[]}
+  return paseItems(p).filter(id=>S.textos[id]).map(id=>({key:id,nombre:S.textos[id].titulo||'Sin título'}))}
+function analizarArchivo(){
+  openSheet(`<div class="grab"></div><div class="t" style="font-size:16px;margin-bottom:4px">Analizar las risas de un vídeo</div>
+   <div class="s" style="margin-bottom:12px;line-height:1.45">Elige el vídeo o audio de una actuación grabada con el móvil o con otra cámara. La app escucha el sonido y marca dónde se ríe el público.</div>
+   <input type="file" id="aaF" accept="video/*,audio/*" style="display:none"><button class="btn" id="aaPick" style="width:100%">Elegir vídeo o audio</button><div id="aaForm"></div>`);
+  $('#aaPick').onclick=()=>$('#aaF').click();
+  $('#aaF').onchange=()=>{const f=$('#aaF').files[0];if(!f)return;const mb=f.size/1048576,txs=Object.values(S.textos).filter(t=>t.estado!=='cementerio').sort((a,b)=>b.editado-a.editado),sets=Object.values(S.setlists).filter(s=>(s.items||[]).some(id=>S.textos[id])).sort((a,b)=>(b.editado||0)-(a.editado||0));
+    let que=sets.length&&false?'set':'texto';const fch=new Date(f.lastModified||Date.now()).toISOString().slice(0,10);
+    $('#aaPick').textContent='Cambiar archivo';
+    const pinta=()=>{$('#aaForm').innerHTML=`<div class="card s" style="margin-top:12px">${esc(f.name)} · ${mb.toFixed(0)} MB${mb>350?'<br><span style="color:var(--amber)">Archivo grande: en el móvil puede fallar. Mejor hazlo en el ordenador.</span>':''}</div>
+      <div class="lbl">¿Qué hiciste en ese pase?</div><div class="seg" id="aaQ"><button data-q="texto" class="${que==='texto'?'on':''}">Un texto o bloque</button><button data-q="set" class="${que==='set'?'on':''}">Un setlist</button></div>
+      ${que==='texto'?`<input id="aaB" placeholder="Buscar texto…" style="margin-top:10px"><select id="aaT" size="6" style="margin-top:8px;height:auto">${txs.map((t,i)=>`<option value="${t.id}" ${i===0?'selected':''}>${esc(t.titulo||'Sin título')}</option>`).join('')}</select>`
+        :sets.length?`<select id="aaS" style="margin-top:10px">${sets.map(s=>`<option value="${s.id}">${esc(s.nombre||'Setlist')} · ${(s.items||[]).length} textos</option>`).join('')}</select>`:`<div class="s" style="margin-top:10px">No tienes setlists con textos.</div>`}
+      <div class="row" style="gap:8px"><div style="flex:1"><div class="lbl">Fecha</div><input id="aaD" type="date" value="${fch}"></div></div>
+      <div class="row" style="gap:8px"><div style="flex:1"><div class="lbl">Local</div><input id="aaL" list="aaLs" placeholder="Ej.: Sala Platea"><datalist id="aaLs">${locales().map(l=>`<option value="${esc(l)}">`).join('')}</datalist></div><div style="flex:1"><div class="lbl">Ciudad</div><input id="aaC" list="aaCs" placeholder="Ej.: Burgos"><datalist id="aaCs">${ciudades().map(l=>`<option value="${esc(l)}">`).join('')}</datalist></div></div>
+      <div class="trow" style="margin-top:12px"><span>Guardar también el vídeo en la app<br><span class="s">Para verlo junto a la curva. Ocupa ${mb.toFixed(0)} MB${Store.hasToken()?' y se sube a tu Drive según Ajustes → Grabaciones':''}.</span></span><button class="tg on" id="aaG"></button></div>
+      <div id="aaP" class="s" style="margin-top:10px"></div>
+      <button class="btn" id="aaGo" style="width:100%;margin-top:10px">Analizar risas</button>`;
+      $$('#aaQ button').forEach(b=>b.onclick=()=>{que=b.dataset.q;pinta()});
+      if($('#aaB'))$('#aaB').oninput=()=>{const q=$('#aaB').value.toLowerCase();[...$('#aaT').options].forEach(o=>o.hidden=!o.textContent.toLowerCase().includes(q))};
+      $('#aaL').onchange=()=>{if(!$('#aaC').value)$('#aaC').value=ciudadDe($('#aaL').value)};
+      $('#aaG').onclick=()=>$('#aaG').classList.toggle('on');
+      $('#aaGo').onclick=async()=>{let items,setId=null,nombre;
+        if(que==='texto'){const id=$('#aaT').value;if(!id)return toast('Elige el texto');items=[id];nombre=S.textos[id].titulo||'Texto'}
+        else{const s=S.setlists[$('#aaS')&&$('#aaS').value];if(!s)return toast('Elige el setlist');items=(s.items||[]).filter(id=>S.textos[id]);setId=s.id;nombre=s.nombre||'Setlist'}
+        $('#aaGo').disabled=true;$('#aaP').textContent='Leyendo el sonido… (puede tardar un poco)';
+        let c;try{c=await curvaDeArchivo(f,x=>{$('#aaP').textContent='Analizando… '+Math.round(x*100)+' %'})}catch(e){$('#aaGo').disabled=false;$('#aaP').innerHTML='<span style="color:#FF8A50">No he podido leer el sonido de este archivo. Prueba a convertirlo a MP4 o MP3.</span>';return}
+        const dur=Math.round(c.dur);delete c.dur;
+        const p={id:uid(),tipo:'actuacion',importado:true,setlistId:setId,setNombre:nombre,items,creado:now(),notas:{},fecha:$('#aaD').value||hoyISO(),local:$('#aaL').value.trim(),ciudad:$('#aaC').value.trim()||ciudadDe($('#aaL').value),duracion:dur,curva:c,editado:now()};
+        p.segmentos=items.length===1?{[items[0]]:[0,dur]}:{};
+        if($('#aaG').classList.contains('on')){await IDB.set('grab:'+p.id,f);p.grab={tipo:f.type.startsWith('audio')?'audio':'video',mime:f.type,size:f.size,local:true}}
+        S.pases[p.id]=p;Store.put('pases',p);closeSheet();S.sesFiltro=null;go('vSes');verAnalisis(p.id,true);
+        if(items.length>1||bloquesDe(S.textos[items[0]]).length>1)toast(items.length>1?'Ahora marca en el vídeo dónde empieza cada texto':'Puedes marcar en el vídeo dónde empieza cada bloque')}};
+    pinta()}}
+function marcarPartes(p,alHecho){const m=$('#vaM');const partes0=()=>partesDe(p);let ini={};Object.entries(p.segmentos||{}).forEach(([k,[a]])=>ini[k]=a);
+  const unico=paseItems(p).length===1,t=unico?S.textos[paseItems(p)[0]]:null,nb=t?bloquesDe(t).length:0;
+  const pinta=()=>{const ps=partes0();$('#vaMk').innerHTML=`<div class="card" style="padding:12px">
+     <div class="t" style="font-size:14px;margin-bottom:4px">Marcar en el vídeo</div><div class="s" style="margin-bottom:10px;line-height:1.45">Reproduce el vídeo y pulsa <b>Empieza aquí</b> justo cuando arranca cada parte. Puedes pausar y mover la barra para afinar.</div>
+     ${unico&&nb>1?`<div class="seg" id="mkB" style="margin-bottom:10px"><button data-b="0" class="${p.porBloques?'':'on'}">Texto entero</button><button data-b="1" class="${p.porBloques?'on':''}">Por bloques (${nb})</button></div>`:''}
+     ${ps.map(x=>`<div class="row" style="padding:6px 0;border-bottom:1px solid var(--line)"><span style="min-width:0;font-size:13.5px">${esc(x.nombre)} <span class="s">${ini[x.key]!=null?mmss(ini[x.key]):'—'}</span></span><button class="btn ghost sm" data-k="${x.key}">Empieza aquí</button></div>`).join('')}
+     <div class="row" style="padding:6px 0"><span class="s">Final de la actuación ${p.finMarca!=null?mmss(p.finMarca):'(fin del vídeo)'}</span><button class="btn ghost sm" id="mkF">Acaba aquí</button></div>
+     <div class="row" style="margin-top:8px;gap:8px"><button class="btn ghost sm" id="mkX" style="flex:1">Cancelar</button><button class="btn sm" id="mkOk" style="flex:1">Guardar marcas</button></div></div>`;
+    if($('#mkB'))$$('#mkB button').forEach(b=>b.onclick=()=>{p.porBloques=b.dataset.b==='1';ini={};pinta()});
+    $$('#vaMk [data-k]').forEach(b=>b.onclick=()=>{ini[b.dataset.k]=Math.round(m.currentTime*10)/10;pinta()});
+    $('#mkF').onclick=()=>{p.finMarca=Math.round(m.currentTime*10)/10;pinta()};
+    $('#mkX').onclick=()=>{$('#vaMk').innerHTML=''};
+    $('#mkOk').onclick=()=>{const ps=partes0().filter(x=>ini[x.key]!=null).sort((a,b)=>ini[a.key]-ini[b.key]);if(!ps.length)return toast('Marca al menos dónde empieza una parte');
+      const fin=p.finMarca??p.duracion,seg={},nom={};ps.forEach((x,k)=>{seg[x.key]=[ini[x.key],k+1<ps.length?ini[ps[k+1].key]:fin];nom[x.key]=x.nombre});
+      p.segmentos=seg;if(p.porBloques)p.segNombres=nom;else delete p.segNombres;p.editado=now();Store.put('pases',p);$('#vaMk').innerHTML='';toast('Marcas guardadas');alHecho()}};
+  pinta();$('#vaMk').scrollIntoView({behavior:'smooth',block:'nearest'})}
 
 /* ============ acciones de texto: borrar, nueva versión, guardar como ============ */
 function borrarTexto(t,despues){confirmBox('¿Borrar «'+(t.titulo||'Sin título')+'»? No se puede deshacer.','Borrar',()=>{delete S.textos[t.id];Store.del('textos',t.id);Object.values(S.ideas).forEach(i=>{if(i.pasada===t.id){delete i.pasada;Store.put('ideas',i)}});if(S.editing===t.id)S.editing=null;despues?despues():renderMesa();toast('Texto borrado')})}
