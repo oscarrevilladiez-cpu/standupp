@@ -297,7 +297,7 @@ input:focus,textarea:focus{border-color:var(--pink)}
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.7</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 9.8</div>
   </section>
 
   <!-- EDITOR -->
@@ -449,7 +449,7 @@ const Store={mode:'local',meta:{},tomb:{},token:null,tokenExp:0,tc:null,syncing:
      for(const k of Object.keys(this.tomb)){if(k.startsWith('drv:')&&!this.tomb[k+':ok']){try{await this.api('files/'+k.slice(4),{method:'DELETE'})}catch(e){}this.tomb[k+':ok']=now()}}
      // subir fotos pendientes
      m.fotoMap=m.fotoMap||{};
-     const ids=new Set();Object.values(S.ideas).forEach(i=>i.fotoId&&ids.add(i.fotoId));Object.values(S.textos).forEach(t=>(t.html||'').replace(/data-foto="([^"]+)"/g,(_,x)=>ids.add(x)));
+     const ids=new Set();Object.values(S.ideas).forEach(i=>i.fotoId&&ids.add(i.fotoId));Object.values(S.textos).forEach(t=>(t.html||'').replace(/data-foto="([^"]+)"/g,(_,x)=>ids.add(x)));if(S.cfg.fotoInicioId)ids.add(S.cfg.fotoInicioId);
      for(const id of ids){if(m.fotoMap[id])continue;const d=S.fotos[id]||await IDB.get('foto:'+id);if(!d)continue;const r=await this.multipart({name:id+'.jpg',parents:[m.fotos]},dataToBlob(d));m.fotoMap[id]=r.id}
      for(const k of Object.keys(this.tomb)){if(k.startsWith('foto:')){const id=k.slice(5);if(m.fotoMap[id]){try{await this.api('files/'+m.fotoMap[id],{method:'DELETE'})}catch(e){}delete m.fotoMap[id]}}}
      for(const i of Object.values(S.ideas)){if(!i.voz||i.voz.driveId)continue;const b=await IDB.get('voz:'+i.id);if(!b)continue;if(!m.grab)m.grab=await this.folder('Grabaciones',m.carpeta);
@@ -715,8 +715,8 @@ function renderBoard(){
 
 /* --- Ajustes --- */
 $('#fiCam').onclick=()=>$('#fiFile').click();
-$('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);S.fotoInicio=d;await IDB.set('fotoInicio',d);renderIni();toast('Imagen de inicio cambiada')};
-$('#fiDel').onclick=async()=>{S.fotoInicio=null;await IDB.del('fotoInicio');renderIni();toast('Vuelve la ilustración')};
+$('#fiFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const d=await shrink(f,1400,.8);if(S.cfg.fotoInicioId)Store.delFoto(S.cfg.fotoInicioId);const id='inicio-'+uid();await Store.putFoto(id,d);S.cfg.fotoInicioId=id;S.fotoInicio=d;await IDB.set('fotoInicio',d);Store.cfg();renderIni();toast('Imagen de inicio cambiada')};
+$('#fiDel').onclick=async()=>{if(S.cfg.fotoInicioId)Store.delFoto(S.cfg.fotoInicioId);S.cfg.fotoInicioId=null;S.fotoInicio=null;await IDB.del('fotoInicio');Store.cfg();renderIni();toast('Vuelve la ilustración')};
 function renderAjustes(){
   const tab=S.ajTab||'g';$$('#ajTabs button').forEach(b=>{b.classList.toggle('on',b.dataset.t===tab);b.onclick=()=>{S.ajTab=b.dataset.t;renderAjustes();$('#vAj').scrollTop=0;window.scrollTo(0,0)}});$('#ajG').style.display=tab==='g'?'':'none';$('#ajT').style.display=tab==='t'?'':'none';
   renderIA();renderLic();renderQuemadoAj();renderPagAj();
@@ -1672,6 +1672,8 @@ function splash(){const d=document.createElement('div');d.id='splash';
    <div style="position:absolute;bottom:28px;left:0;right:0;text-align:center;color:#6d6574;font-size:12px">Una app de <b style="color:#9C95A3">Oscar Revilla Díez</b></div>`;
   document.body.appendChild(d);setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),450)},1700)}
 async function renderIni(){
+  if(S.cfg.fotoInicioId&&S.fotoInicioDe!==S.cfg.fotoInicioId){const id=S.cfg.fotoInicioId;S.fotoInicioDe=id;Store.getFoto(id).then(d=>{if(d&&S.cfg.fotoInicioId===id){S.fotoInicio=d;IDB.set('fotoInicio',d);renderIni()}else if(!d)S.fotoInicioDe=null})}
+  else if(!S.cfg.fotoInicioId&&S.fotoInicioDe&&S.fotoInicio){S.fotoInicio=null;S.fotoInicioDe=null;IDB.del('fotoInicio')}
   const foto=S.fotoInicio;$('#iniBand').innerHTML=foto?`<img src="${foto}" alt="" style="width:100%;height:100%;object-fit:cover;display:block">`:escenarioSVG();
   $('#iniLogo').innerHTML=wordmark(40,S.cfg.tema==='light'?'#1A171C':'#F5F2F6',S.cfg.tema==='light'?'#D81E68':'#FF3E8E');
   const T=Object.values(S.textos),cerr=T.filter(t=>t.estado==='cerrado'),rep=cerr.reduce((a,t)=>a+minOf(statsOf(t)),0),pend=T.reduce((a,t)=>a+((t.stats&&t.stats.pend)||0),0);
@@ -1896,7 +1898,7 @@ function editStyle(id){
 }
 
 /* ============ arranque ============ */
-splash();applyTheme();buildStyleCSS();go('vIni');Store.init().then(()=>LIC.init());
+splash();applyTheme();buildStyleCSS();go('vIni');Store.init().then(async()=>{if(S.fotoInicio&&!S.cfg.fotoInicioId){const id='inicio-'+uid();await Store.putFoto(id,S.fotoInicio);S.cfg.fotoInicioId=id;S.fotoInicioDe=id;Store.cfg()}LIC.init()});
 /* app instalable */
 let deferredInstall=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installCard').style.display='block'});
