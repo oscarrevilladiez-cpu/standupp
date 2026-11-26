@@ -8,6 +8,7 @@ const CLAVE_SECRETA_PAYHIP = 'PEGA_AQUI_LA_CLAVE';
 
 // 👉 2. Códigos de regalo inventados por ti para compañeros (o para ti). Uno por persona.
 //    Ejemplo: ['OSCAR-2026', 'PALOMA-RISAS']   (déjalo así [] si no quieres ninguno)
+//    Cada código de regalo vale, como una licencia comprada, para MAX_APARATOS aparatos.
 const CODIGOS_REGALO = ['OSCAR-AUTOR'];
 
 // Cuántos aparatos puede activar cada licencia (por ejemplo, móvil y PC)
@@ -45,7 +46,7 @@ function atender(accion, clave, aparato) {
   }
   if (accion === 'activar') {
     if (ya) return { ok: true, quien: quien, aparatos: lista.length, max: MAX_APARATOS };
-    if (lista.length >= MAX_APARATOS && !regalo) return { ok: false, motivo: 'limite', max: MAX_APARATOS };
+    if (lista.length >= MAX_APARATOS) return { ok: false, motivo: 'limite', max: MAX_APARATOS };
     lista.push(aparato);
     props.setProperty(k, JSON.stringify(lista));
     if (!regalo) payhip('put', 'usage', { license_key: clave });

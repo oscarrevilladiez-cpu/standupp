@@ -344,7 +344,7 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.8</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.9</div>
   </section>
 
   <!-- EDITOR -->
@@ -1663,12 +1663,17 @@ function renderLic(){const c=$('#licCard');if(!c)return;if(!LIC.url()){c.style.d
   if($('#licA'))$('#licA').onclick=async()=>{$('#licE').textContent='Comprobando…';try{await LIC.activar($('#licK').value);renderLic();LIC.puerta();toast('Licencia activada')}catch(e){$('#licE').innerHTML=`<span style="color:#FF8A50">${esc(e.message||String(e))}</span>`}}}
 
 /* ============ IA opcional (clave del usuario, solo en este aparato) ============ */
-const IA={key:null,
+const IA={keys:{},est:{},
  prov:()=>S.cfg.iaProv||'gemini',
- audio:()=>['gemini','openai'].includes(S.cfg.iaProv||'gemini'),
+ vale(p){return !!(this.keys[p]&&this.est[p]&&this.est[p].ok&&this.est[p].modelo)},
+ usar(tipo){const act=this.prov(),orden=[act,'gemini','openai','claude'].filter((x,i,a)=>a.indexOf(x)===i);
+  return orden.find(p=>this.vale(p)&&(tipo!=='audio'||p!=='claude'))||null},
+ audio(){return !!this.usar('audio')},
  lista:{gemini:{n:'Gemini (Google)',url:'aistudio.google.com/app/apikey',nota:'Suele tener un nivel gratuito con límites.'},claude:{n:'Claude (Anthropic)',url:'console.anthropic.com/settings/keys',nota:'No transcribe audio; sí lee fotos y sugiere etiquetas.'},openai:{n:'ChatGPT (OpenAI)',url:'platform.openai.com/api-keys',nota:'De pago por uso, céntimos al mes.'}},
- async cargar(){this.key=await IDB.get('iaKey')||null},
- on(){return !!this.key&&!!S.cfg.iaModelo},
+ async cargar(){this.keys=await IDB.get('iaKeys')||{};this.est=await IDB.get('iaEst')||{};
+  const vieja=await IDB.get('iaKey');if(vieja&&!Object.keys(this.keys).length){const p=S.cfg.iaProv||'gemini';this.keys[p]=vieja;this.est[p]={ok:!!S.cfg.iaModelo,modelo:S.cfg.iaModelo||null};await IDB.set('iaKeys',this.keys);await IDB.set('iaEst',this.est);await IDB.del('iaKey')}},
+ async guardar(){await IDB.set('iaKeys',this.keys);await IDB.set('iaEst',this.est)},
+ on(){return !!this.usar()},
  async modelos(prov,key){
   if(prov==='gemini'){const j=await (await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key='+encodeURIComponent(key))).json();if(j.error)throw new Error(j.error.message);
     const ok=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace('models/',''));
@@ -1680,7 +1685,7 @@ const IA={key:null,
   if(prov==='openai'){const r=await fetch('https://api.openai.com/v1/models',{headers:{Authorization:'Bearer '+key}});const j=await r.json();if(!r.ok)throw new Error((j.error&&j.error.message)||'Clave no válida');
     const ids=(j.data||[]).map(m=>m.id).filter(i=>/^gpt-/.test(i)&&/mini/.test(i)&&!/transcribe|tts|audio|realtime|search|image|nano|\d{4}-\d\d-\d\d/.test(i)).sort().reverse();return ids[0]||'gpt-4o-mini'}
  },
- async texto(prompt,img){const k=this.key,m=S.cfg.iaModelo,p=this.prov();if(!k)throw new Error('sin clave');
+ async texto(prompt,img,forzar){const p=forzar||this.usar();if(!p)throw new Error('No hay ninguna IA funcionando');const k=this.keys[p],m=this.est[p].modelo;
   const b64=img?img.split(',')[1]:null,mime=img?img.split(';')[0].slice(5):null;
   if(p==='gemini'){const parts=[{text:prompt}];if(img)parts.push({inline_data:{mime_type:mime,data:b64}});
     const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(k)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts}]})});
@@ -1692,11 +1697,11 @@ const IA={key:null,
     const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+k,'Content-Type':'application/json'},body:JSON.stringify({model:m,messages:[{role:'user',content}]})});
     const j=await r.json();if(!r.ok)throw new Error(j.error?j.error.message:'error');return (j.choices?.[0]?.message?.content||'').trim()}
  },
- async transcribir(blob){const k=this.key,p=this.prov();
+ async transcribir(blob){const p=this.usar('audio');if(!p)throw new Error('Ninguna IA con clave puede transcribir audio');const k=this.keys[p];
   if(p==='openai'){const f=new FormData();f.append('file',new File([blob],'nota.'+(blob.type.includes('mp4')?'mp4':'webm'),{type:blob.type}));f.append('model','gpt-4o-mini-transcribe');f.append('language','es');
     const r=await fetch('https://api.openai.com/v1/audio/transcriptions',{method:'POST',headers:{Authorization:'Bearer '+k},body:f});const j=await r.json();if(!r.ok)throw new Error(j.error?j.error.message:'error');return (j.text||'').trim()}
   if(p==='gemini'){const d=await blobToData(blob);const mime=(blob.type||'audio/webm').split(';')[0];
-    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${S.cfg.iaModelo}:generateContent?key=${encodeURIComponent(k)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Transcribe literalmente esta nota de voz en español. Devuelve solo el texto, sin comentarios.'},{inline_data:{mime_type:mime,data:d.split(',')[1]}}]}]})});
+    const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.est.gemini.modelo}:generateContent?key=${encodeURIComponent(k)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:'Transcribe literalmente esta nota de voz en español. Devuelve solo el texto, sin comentarios.'},{inline_data:{mime_type:mime,data:d.split(',')[1]}}]}]})});
     const j=await r.json();if(!r.ok)throw new Error(j.error?j.error.message:'error');return ((j.candidates||[])[0]?.content?.parts||[]).map(x=>x.text||'').join('').trim()}
   throw new Error('Este proveedor no transcribe audio')},
  async leerFoto(img){return this.texto('Transcribe exactamente el texto (manuscrito o impreso) de esta imagen, en español, respetando los saltos de línea. Devuelve solo el texto, sin comentarios. Si no hay texto, devuelve una cadena vacía.',img)},
@@ -1704,24 +1709,33 @@ const IA={key:null,
   const r=await this.texto(`Eres el asistente de un cómico. Propón entre 2 y 5 etiquetas temáticas para este texto de comedia. Usa preferentemente etiquetas de esta lista si encajan: ${JSON.stringify(usadas)}. Etiquetas cortas, en minúscula, en español, temas generales (familia, alcohol, trabajo…), nunca frases. No repitas estas: ${JSON.stringify(ya)}. Responde SOLO con un array JSON de cadenas.\n\nTEXTO:\n${texto.slice(0,4000)}`);
   const m=r.match(/\[[\s\S]*\]/);try{return JSON.parse(m?m[0]:r).map(x=>String(x).toLowerCase().trim()).filter(Boolean).slice(0,6)}catch(e){return []}}
 };
-function renderIA(){const p=IA.prov(),L=IA.lista[p];
-  $('#iaBox').innerHTML=`<div class="s" style="margin-bottom:10px;line-height:1.5">Opcional. Todo funciona sin IA. Si pegas una clave de tu cuenta, la app puede transcribir notas de voz, leer letra difícil en fotos y sugerir etiquetas. La clave <b>solo se guarda en este aparato</b> y nunca pasa por nadie más; el coste (si lo hay) es de tu cuenta.</div>
-   <div class="seg" id="iaP">${Object.entries(IA.lista).map(([k,v])=>`<button data-p="${k}" class="${p===k?'on':''}">${v.n.split(' ')[0]}</button>`).join('')}</div>
-   <div class="s" style="margin:8px 0">Consigue la clave en <b>${L.url}</b>. ${L.nota}</div>
-   <div class="row"><input id="iaK" type="password" placeholder="${IA.key&&S.cfg.iaProv===p?'Clave guardada ••••'+IA.key.slice(-4):'Pega aquí tu clave'}" style="flex:1"><button class="btn sm" id="iaT">Probar</button></div>
-   <div id="iaE" class="s" style="margin-top:8px">${IA.on()&&S.cfg.iaProv===p?`<span style="color:var(--green)">✓ Funciona</span> · modelo ${esc(S.cfg.iaModelo)}`:''}</div>
-   ${IA.on()?`<div class="lbl">Qué hace la IA</div>
-     <div class="trow"><span>Transcribir notas de voz ${IA.audio()?'':'<span class="s">(no con Claude)</span>'}</span><button class="tg ${S.cfg.iaVoz!==false&&IA.audio()?'on':''}" data-f="iaVoz" ${IA.audio()?'':'disabled'}></button></div>
-     <div class="trow"><span>Leer fotos con IA (letra a mano difícil)</span><button class="tg ${S.cfg.iaFoto!==false?'on':''}" data-f="iaFoto"></button></div>
-     <div class="trow"><span>Botón «Sugerir con IA» en las etiquetas</span><button class="tg ${S.cfg.iaTags!==false?'on':''}" data-f="iaTags"></button></div>
-     <button class="btn ghost sm" id="iaX" style="width:100%;margin-top:8px">Quitar la clave de este aparato</button>`:''}`;
-  $$('#iaP button').forEach(b=>b.onclick=()=>{S.cfg.iaProv=b.dataset.p;Store.cfg();renderIA()});
-  $('#iaT').onclick=async()=>{const k=$('#iaK').value.trim()||(S.cfg.iaProv===p?IA.key:null);if(!k)return toast('Pega primero la clave');
-    $('#iaE').textContent='Probando…';try{const m=await IA.modelos(p,k);if(!m)throw new Error('No encuentro un modelo disponible');IA.key=k;await IDB.set('iaKey',k);S.cfg.iaProv=p;S.cfg.iaModelo=m;
-      const r=await IA.texto('Responde solo con la palabra: listo');if(!r)throw new Error('Respuesta vacía');Store.cfg();renderIA();toast('IA conectada')}
-    catch(e){$('#iaE').innerHTML=`<span style="color:#FF8A50">No funciona: ${esc(String(e.message||e).slice(0,140))}</span>`}};
+function renderIA(){const p=S.iaVer||IA.prov(),L=IA.lista[p],e=IA.est[p]||{},hay=!!IA.keys[p],act=IA.prov()===p;
+  const punto=x=>IA.keys[x]?`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;background:${(IA.est[x]||{}).ok?'var(--green)':'#FF6B6B'}"></span>`:'';
+  const estado=!hay?'':e.probando?'<span class="s">Probando…</span>':e.ok?`<b style="color:var(--green)">Funcionando</b> <span class="s">· modelo ${esc(e.modelo||'')}</span>`:`<b style="color:#FF6B6B">${esc(e.err||'No funciona')}</b>`;
+  const tg=(k,txt,vale)=>`<div class="trow"><span style="${vale?'':'text-decoration:line-through;opacity:.5'}">${txt}</span><button class="tg ${vale&&S.cfg[k]!==false?'on':''}" data-f="${k}" ${vale?'':'disabled'}></button></div>`;
+  $('#iaBox').innerHTML=`<div class="s" style="margin-bottom:10px;line-height:1.5">Opcional. Todo funciona sin IA. Puedes guardar una clave de cada IA (Gemini, Claude y ChatGPT): las claves <b>solo se guardan en este aparato</b> y el coste, si lo hay, es de tu cuenta.</div>
+   <div class="seg" id="iaP">${Object.entries(IA.lista).map(([k,v])=>`<button data-p="${k}" class="${p===k?'on':''}">${v.n.split(' ')[0]}${punto(k)}</button>`).join('')}</div>
+   <div class="s" style="margin:10px 0 8px">Consigue la clave en <b>${L.url}</b>. ${L.nota}</div>
+   <div class="row"><input id="iaK" type="password" autocomplete="off" placeholder="${hay?'':'Pega aquí tu clave de '+L.n.split(' ')[0]}" value="${hay?'••••••••••••':''}" style="flex:1"><button class="btn sm" id="iaT">${hay?'Probar':'Guardar'}</button></div>
+   <div class="row" style="margin-top:10px;justify-content:flex-start;gap:8px"><span class="s">Estado:</span><span id="iaE">${estado}</span></div>
+   ${hay?`<div class="row" style="margin-top:10px;gap:8px">${e.ok?(act?`<span class="chip" style="border-color:var(--green);color:var(--green)">En uso</span>`:`<button class="btn ghost sm" id="iaU" style="flex:1">Usar esta IA</button>`):''}<button class="btn ghost sm" id="iaX" style="flex:1">Quitar la clave</button></div>`:''}
+   <div class="lbl">Qué hace ${L.n.split(' ')[0]}</div>
+   ${tg('iaVoz','Transcribir notas de voz',p!=='claude')}
+   ${tg('iaFoto','Leer fotos (también letra a mano)',true)}
+   ${tg('iaTags','Botón «Sugerir con IA» en las etiquetas',true)}
+   ${p==='claude'?'<div class="s" style="margin-top:6px">Claude no transcribe audio. Si también tienes clave de Gemini o ChatGPT, las notas de voz se transcriben con esa.</div>':''}`;
+  $$('#iaP button').forEach(b=>b.onclick=()=>{S.iaVer=b.dataset.p;renderIA()});
+  const k0=$('#iaK');k0.onfocus=()=>{if(hay&&k0.value.startsWith('••'))k0.value=''};k0.onblur=()=>{if(hay&&!k0.value.trim())k0.value='••••••••••••'};
+  $('#iaT').onclick=async()=>{const v=k0.value.trim(),k=v&&!v.startsWith('••')?v:IA.keys[p];if(!k)return toast('Pega primero la clave');
+    IA.keys[p]=k;IA.est[p]={probando:true};await IA.guardar();renderIA();
+    try{const m=await IA.modelos(p,k);if(!m)throw new Error('No encuentro un modelo disponible con esta clave');IA.est[p]={ok:true,modelo:m};
+      const r=await IA.texto('Responde solo con la palabra: listo',null,p);if(!r)throw new Error('La IA no responde');
+      if(!IA.vale(IA.prov())||!IA.keys[IA.prov()]){S.cfg.iaProv=p;Store.cfg()}toast(L.n.split(' ')[0]+' funcionando')}
+    catch(err){IA.est[p]={ok:false,err:String(err.message||err).replace(/\s+/g,' ').slice(0,120)}}
+    await IA.guardar();renderIA()};
+  if($('#iaU'))$('#iaU').onclick=()=>{S.cfg.iaProv=p;Store.cfg();renderIA();toast('Ahora se usa '+L.n.split(' ')[0])};
+  if($('#iaX'))$('#iaX').onclick=async()=>{delete IA.keys[p];delete IA.est[p];await IA.guardar();renderIA();toast('Clave quitada')};
   $$('#iaBox [data-f]').forEach(b=>b.onclick=()=>{const k=b.dataset.f;S.cfg[k]=S.cfg[k]===false;Store.cfg();renderIA()});
-  if($('#iaX'))$('#iaX').onclick=async()=>{IA.key=null;await IDB.del('iaKey');S.cfg.iaModelo=null;Store.cfg();renderIA();toast('Clave quitada')};
 }
 
 /* ============ notas de voz en la Libreta ============ */
