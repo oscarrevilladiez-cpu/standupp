@@ -344,7 +344,7 @@ html.dark{color-scheme:dark;background:#0E0D10}html.light{color-scheme:light;bac
       <div id="tagMgr"></div>
     </div>
     </div>
-    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.9</div>
+    <div class="s" style="text-align:center;margin-top:16px">stand UPP comedy · versión 10.10</div>
   </section>
 
   <!-- EDITOR -->
@@ -1481,6 +1481,22 @@ function menuGuardar(){openSheet(`<div class="grab"></div><div class="s" style="
 function guardarYa(){try{if(S.editing)flushSave()}catch(e){}try{clearTimeout(Store.pt);IDB.set('textos',S.textos);IDB.set('ideas',S.ideas);IDB.set('setlists',S.setlists);IDB.set('pases',S.pases);IDB.set('cfg',S.cfg);IDB.set('tomb',Store.tomb);IDB.set('meta',Store.meta)}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){guardarYa();if(Store.hasToken())Store.sync()}});
 window.addEventListener('pagehide',guardarYa);window.addEventListener('beforeunload',guardarYa);
+/* ============ volver al mismo sitio si el sistema cierra la app en segundo plano ============ */
+function scrollVista(){return S.view==='vEd'?($('#edWrap')||{}).scrollTop||0:(window.scrollY||document.scrollingElement.scrollTop||0)}
+function guardarEstado(){try{const e={t:Date.now(),view:S.view==='vEsc'?'vSes':S.view,editing:S.view==='vEd'?S.editing:null,setOpen:S.setOpen||null,mCarpeta:S.mCarpeta||null,ajTab:S.ajTab||'g',ajDesde:S.ajDesde||null,scroll:scrollVista(),q:($('#mSearch')||{}).value||''};
+  if(S.view==='vEd'){const sel=getSelection();if(sel.rangeCount&&ed.contains(sel.anchorNode)){const r=document.createRange();r.selectNodeContents(ed);r.setEnd(sel.anchorNode,sel.anchorOffset);e.caret=r.toString().length}}
+  localStorage.setItem('estadoUI',JSON.stringify(e))}catch(x){}}
+function caretEn(n){const w=document.createTreeWalker(ed,NodeFilter.SHOW_TEXT);let t;while(t=w.nextNode()){if(n<=t.length){const r=document.createRange();r.setStart(t,n);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r);return}n-=t.length}}
+function restaurarEstado(e){if(!e)return;try{
+  S.mCarpeta=e.mCarpeta;S.ajTab=e.ajTab;
+  if(e.view==='vEd'&&e.editing&&S.textos[e.editing]){openEditor(e.editing);const vuelve=()=>{$('#edWrap').scrollTop=e.scroll||0};setTimeout(()=>{if(e.caret!=null){ed.focus({preventScroll:true});caretEn(e.caret)}vuelve()},350);setTimeout(vuelve,900)}
+  else if(e.view==='vSetD'&&e.setOpen&&S.setlists[e.setOpen]){openSet(e.setOpen);setTimeout(()=>scrollTo(0,e.scroll||0),150)}
+  else if(e.view==='vAj'){S.ajDesde=e.ajDesde&&e.ajDesde!=='vEd'?e.ajDesde:'vIni';go('vAj');setTimeout(()=>scrollTo(0,e.scroll||0),150)}
+  else if(e.view!=='vEd'&&e.view!=='vSetD'&&document.getElementById(e.view)){if(e.view==='vMesa'&&e.q)$('#mSearch').value=e.q;go(e.view);setTimeout(()=>scrollTo(0,e.scroll||0),150)}
+}catch(x){}}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)guardarEstado()});
+window.addEventListener('pagehide',guardarEstado);
+setInterval(()=>{if(!document.hidden)guardarEstado()},5000);
 /* ============ trabajo a la vez en dos aparatos ============ */
 let ultTecla=0;ed.addEventListener('input',()=>{ultTecla=Date.now()});
 function vivoTrasSync(){
@@ -2113,7 +2129,8 @@ function editStyle(id){
 }
 
 /* ============ arranque ============ */
-splash();applyTheme();buildStyleCSS();go('vIni');Store.init().then(async()=>{if(!S.inicio&&S.cfg.fotoInicioId&&S.fotoInicio){S.inicio={id:S.cfg.fotoInicioId,editado:now()};S.fotoInicioDe=S.inicio.id;await IDB.set('inicio',S.inicio);Store.persist()}else if(!S.inicio&&S.fotoInicio){await fijarInicio(S.fotoInicio)}LIC.init()});
+const EST0=(()=>{try{const e=JSON.parse(localStorage.getItem('estadoUI')||'null');return e&&Date.now()-e.t<6*3600e3&&e.view&&e.view!=='vIni'?e:null}catch(x){return null}})();
+if(!EST0)splash();applyTheme();buildStyleCSS();go('vIni');Store.init().then(async()=>{restaurarEstado(EST0);if(!S.inicio&&S.cfg.fotoInicioId&&S.fotoInicio){S.inicio={id:S.cfg.fotoInicioId,editado:now()};S.fotoInicioDe=S.inicio.id;await IDB.set('inicio',S.inicio);Store.persist()}else if(!S.inicio&&S.fotoInicio){await fijarInicio(S.fotoInicio)}LIC.init()});
 /* app instalable */
 let deferredInstall=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;$('#installCard').style.display='block'});
